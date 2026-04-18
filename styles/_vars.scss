@@ -1,0 +1,10 @@
+:root {
+  --main-font: var(--font-inter), sans-serif;
+
+  --text-xs: clamp(0.75rem, 0.7vw, 0.85rem);
+  --text-sm: clamp(0.9rem, 0.9vw, 1rem);
+  --text-base: clamp(1rem, 1vw, 1.1rem);
+  --text-lg: clamp(1.2rem, 1.4vw, 1.4rem);
+  --text-xl: clamp(1.6rem, 2vw, 2rem);
+  --text-xxl: clamp(2.2rem, 3vw, 2.8rem);
+}

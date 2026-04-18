@@ -1,0 +1,36 @@
+.logo {
+  position: relative;
+  display: flex;
+  gap: 24px;
+  margin-bottom: 36px;
+  z-index: 10;
+
+  &__image {
+    width: 80px;
+    height: auto;
+    flex-shrink: 0;
+    object-fit: contain;
+  }
+
+  &__title {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin: 0;
+    color: #fff;
+    text-shadow: 2px 2px 12px #00000080;
+  }
+
+  &__main-title {
+    font-size: 1.3em;
+    font-weight: 700;
+    text-transform: uppercase;
+    line-height: 1.1;
+    letter-spacing: -0.05em;
+  }
+
+  &__sub-title {
+    font-size: 0.6em;
+    font-weight: 400;
+  }
+}
