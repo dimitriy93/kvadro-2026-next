@@ -1,18 +1,12 @@
 "use client";
 import {useState} from "react";
-import {Logo} from "@/components/Logo";
 import {FloatingMenu} from "@/widgets/FloatingMenu";
-
-const categories = [
-    {num: '01', id: 'bg-fire', title: 'Пожарная безопасность'},
-    {num: '02', id: 'bg-alarm', title: 'Охранная сигнализация'},
-    {num: '03', id: 'bg-low-voltage', title: 'Слаботочные инженерные системы'},
-    {num: '04', id: 'bg-security-services', title: 'Охранные услуги'},
-]
+import {Logo} from "@/components/Logo";
+import {Button} from "@/components/Button";
+import {landing} from "@/config/content/landing";
 
 function Page () {
     const [activeBg, setActiveBg] = useState<string | null>(null);
-    // const [menuOpen, setMenuOpen] = useState<boolean>(false);
 
     const handleCategoryEnter = (bg: string) => {
         setActiveBg(bg);
@@ -25,7 +19,7 @@ function Page () {
     return (
         <>
             <div className="main-overlay"></div>
-            {categories.map(elem => (
+            {landing.categories.map(elem => (
                 <div
                     key={elem.id}
                     id={elem.id}
@@ -41,7 +35,7 @@ function Page () {
                     <div className="main__left">
                         <Logo />
                         <ul className="categories">
-                            {categories.map(elem => (
+                            {landing.categories.map(elem => (
                                 <li
                                     className="categories__item"
                                     data-bg={elem.id}
@@ -57,23 +51,12 @@ function Page () {
                     </div>
 
                     <div className="main__right">
-                    <span className="promo-eyebrow">
-                      Системы безопасности
-                    </span>
-                        <h2 className="promo-heading">
-                            Комплексные решения
-                            в сфере безопасности
-                        </h2>
-                        <p className="promo-text">
-                            ООО ПМО «Квадро-Арсенал» реализует инженерные
-                            системы безопасности, противопожарные комплексы
-                            и охранные решения для предприятий и объектов
-                            различной сложности.
-                        </p>
-
+                        <span className="promo-eyebrow">{landing.eyebrow}</span>
+                        <h2 className="promo-heading">{landing.heading}</h2>
+                        <p className="promo-text">{landing.text}</p>
                         <div className="promo-actions">
-                            <button className="btn-primary">Позвонить нам</button>
-                            <button className="btn-secondary">Вакансии</button>
+                            <Button mode="primary">{landing.btn_call}</Button>
+                            <Button mode="secondary">{landing.btn_vacancy}</Button>
                         </div>
                     </div>
                 </div>

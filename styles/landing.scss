@@ -153,31 +153,3 @@
     z-index: 1;
   }
 }
-
-.btn-primary {
-  background: #ff4d00;
-  color: white;
-  border: none;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  transition: all .3s ease;
-  padding: 14px 28px;
-  &:hover {
-    background: #ff6a2c;
-    transform: translateY(-2px);
-  }
-}
-
-.btn-secondary {
-  padding: 14px 28px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: white;
-  cursor: pointer;
-  transition: all .3s ease;
-  &:hover {
-    border-color: white;
-    background: rgba(255, 255, 255, 0.05);
-  }
-}
