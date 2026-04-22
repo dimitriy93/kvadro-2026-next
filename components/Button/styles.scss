@@ -1,13 +1,19 @@
+@use "@/styles/_vars" as *;
+
+.btn {
+  @include font-size(12, 14);
+  color: white;
+  cursor: pointer;
+  transition: all .3s ease;
+  @include padding-x(16, 28);
+  @include padding-y(8, 14);
+}
+
 .btn-primary {
   background: #ff4d00;
-  color: white;
   border: none;
   font-weight: 500;
   letter-spacing: 0.04em;
-  cursor: pointer;
-  transition: all .3s ease;
-  padding: 14px 28px;
-
   &:hover {
     background: #ff6a2c;
     transform: translateY(-2px);
@@ -17,13 +23,25 @@
 .btn-secondary {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.25);
-  color: white;
-  cursor: pointer;
-  transition: all .3s ease;
-  padding: 14px 28px;
-
   &:hover {
     border-color: white;
     background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+.btn-primary-inverted {
+  @include padding-x(18, 32);
+  @include padding-y(14, 18);
+  border: 1px solid white;
+  background: #0a0a0a;
+  color: white;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform .25s ease, background .25s ease;
+  &:hover {
+    border: 1px solid #ff4d00;
+    background: #ff4d00;
+    transform: translateY(-3px);
   }
 }

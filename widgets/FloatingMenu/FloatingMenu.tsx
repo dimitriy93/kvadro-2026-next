@@ -1,6 +1,7 @@
 import {useState} from "react";
-import "./styles.scss";
+import {Button} from "@/components/Button";
 import {menu} from "@/config/content/menu";
+import "./styles.scss";
 
 export const FloatingMenu = () => {
     const [menuOpen, setMenuOpen] = useState<boolean>(false);
@@ -47,7 +48,7 @@ export const FloatingMenu = () => {
                         <div className="menu-phone">{menu.phone}</div>
                         <div className="menu-address">{menu.address}</div>
                     </div>
-                    <button className="menu-cta">{menu.cta}</button>
+                    <Button mode="primary-inverted">{menu.cta}</Button>
                 </div>
             </nav>
         </>

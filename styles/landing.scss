@@ -1,3 +1,5 @@
+@use "vars" as *;
+
 .main {
   position: relative;
   overflow: hidden;
@@ -9,16 +11,18 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding-left: clamp(20px, 8vw, 100px);
-  padding-right: clamp(20px, 8vw, 100px);
+  @include padding-x(20, 100);
 
   &__wrap {
-    display: grid;
-    grid-template-columns: 1fr auto;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
     min-height: 100vh;
     padding-top: 60px;
-    gap: clamp(40px, 6vw, 120px);
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    @include gap(20, 80);
     z-index: 10;
   }
 
@@ -49,12 +53,12 @@
 }
 
 .categories {
+  @include gap(12, 24);
   position: relative;
   color: #fff;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
   z-index: 10;
 
   &:hover .categories__item:not(:hover) {
@@ -63,10 +67,10 @@
   }
 
   &__item {
+    @include gap(10, 15);
     cursor: pointer;
     display: flex;
     align-items: baseline;
-    gap: 15px;
     color: rgba(255, 255, 255, 0.6);
     transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     transform: translateX(0);
@@ -80,13 +84,13 @@
   }
 
   &__number {
-    font-size: 0.8rem;
+    @include font-size(10, 13);
     font-family: monospace;
     opacity: 0.5;
   }
 
   &__text {
-    font-size: 1.8rem;
+    @include font-size(16, 28);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.02em;
@@ -105,14 +109,14 @@
 }
 
 .promo-eyebrow {
-  font-size: var(--text-xs);
+  @include font-size(8, 12);
   letter-spacing: .25em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, .6);
 }
 
 .promo-heading {
-  font-size: var(--text-xxl);
+  @include font-size(24, 42);
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.02em;
@@ -120,20 +124,20 @@
 }
 
 .promo-text {
-  font-size: var(--text-base);
+  @include font-size(12 ,16);
   line-height: 1.7;
   color: rgba(255, 255, 255, 0.7);
   max-width: 40ch;
 }
 
 .promo-actions {
+  @include gap(12, 16);
   display: flex;
-  gap: 16px;
   margin-top: 10px;
 }
 
 .main-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
   z-index: 1;
@@ -151,5 +155,42 @@
   &.is-active {
     opacity: 1;
     z-index: 1;
+  }
+}
+
+@media screen and (max-width: 993px) {
+  .mobile-header {
+    position: absolute;
+    background: #141414b3;
+    border: 1px solid #ffffff1a;
+    z-index: 12;
+    display: flex;
+    @include padding-x(20, 100);
+    width: 100%;
+    .logo {
+      padding: 24px 0;
+      margin: 0;
+    }
+  }
+ .main__wrap {
+   flex-direction: column;
+   justify-content: normal;
+   align-items: flex-start;
+   gap: 36px;
+   padding: 136px 0;
+ }
+  .main__right {
+    order: -1;
+    width: 100%;
+    max-width: none;
+  }
+  .promo-text {
+    max-width: none;
+  }
+  .main__left {
+    .promo-heading {
+      color: white;
+      margin-bottom: 28px;
+    }
   }
 }

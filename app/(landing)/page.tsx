@@ -1,11 +1,13 @@
 "use client";
 import {useState} from "react";
+import {useIsMobile} from "@/hooks/useIsMobile";
 import {FloatingMenu} from "@/widgets/FloatingMenu";
 import {Logo} from "@/components/Logo";
 import {Button} from "@/components/Button";
 import {landing} from "@/config/content/landing";
 
 function Page () {
+    const isMobile = useIsMobile(992);
     const [activeBg, setActiveBg] = useState<string | null>(null);
 
     const handleCategoryEnter = (bg: string) => {
@@ -30,10 +32,21 @@ function Page () {
                 ></div>
             ))}
 
+            {isMobile && (
+                <div className="mobile-header">
+                    <Logo/>
+                </div>
+            )}
+
             <div className="main">
-                <div className="main__wrap container">
+                <div className="main__wrap">
                     <div className="main__left">
-                        <Logo />
+                        {!isMobile && (<Logo />)}
+                        {isMobile && (
+                            <h2 className="promo-heading">
+                                Наши услуги
+                            </h2>
+                        )}
                         <ul className="categories">
                             {landing.categories.map(elem => (
                                 <li

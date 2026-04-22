@@ -1,10 +1,40 @@
-:root {
-  --main-font: var(--font-inter), sans-serif;
+@use "sass:math";
 
-  --text-xs: clamp(0.75rem, 0.7vw, 0.85rem);
-  --text-sm: clamp(0.9rem, 0.9vw, 1rem);
-  --text-base: clamp(1rem, 1vw, 1.1rem);
-  --text-lg: clamp(1.2rem, 1.4vw, 1.4rem);
-  --text-xl: clamp(1.6rem, 2vw, 2rem);
-  --text-xxl: clamp(2.2rem, 3vw, 2.8rem);
+$min-vw: 375;
+$max-vw: 1440;
+
+@function calc-fluid($min-size, $max-size) {
+  $slope: math.div($max-size - $min-size, $max-vw - $min-vw);
+  $y-axis-intersection: -($min-vw * $slope) + $min-size;
+  @return clamp(#{$min-size}px, calc(#{$y-axis-intersection}px + #{$slope * 100}vw), #{$max-size}px);
+}
+
+@mixin fluid($property, $min-size, $max-size) {
+  #{$property}: calc-fluid($min-size, $max-size);
+}
+
+@mixin font-size($min, $max) {
+  font-size: calc-fluid($min, $max);
+}
+
+@mixin width($min, $max) {
+  width: calc-fluid($min, $max);
+}
+
+@mixin height($min, $max) {
+  height: calc-fluid($min, $max);
+}
+
+@mixin gap($min, $max) {
+  gap: calc-fluid($min, $max);
+}
+
+@mixin padding-x($min, $max) {
+  padding-left: calc-fluid($min, $max);
+  padding-right: calc-fluid($min, $max);
+}
+
+@mixin padding-y($min, $max) {
+  padding-top: calc-fluid($min, $max);
+  padding-bottom: calc-fluid($min, $max);
 }
