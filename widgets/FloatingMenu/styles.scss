@@ -2,7 +2,7 @@
 
 .floating-menu {
   position: fixed;
-  bottom: 30px;
+  bottom: 45px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
@@ -106,11 +106,12 @@
 
 .menu-panel {
   position: fixed;
-  bottom: 90px;
+  bottom: 115px;
   left: 50%;
   transform-origin: bottom center;
   transform: translateX(-50%) scale(.3);
   opacity: 0;
+  visibility: hidden;
   background: rgba(20, 20, 20, .92);
   backdrop-filter: blur(16px);
   @include padding-x(30, 60);
@@ -124,6 +125,7 @@
 
   &.active {
     opacity: 1;
+    visibility: visible;
     transform: translateX(-50%) scale(1);
   }
 

@@ -1,0 +1,27 @@
+@use "@/styles/_vars" as *;
+
+.copyright {
+  @include font-size(10, 12);
+  text-align: right;
+  position: absolute;
+  right: 15px;
+  bottom: 10px;
+  color: #fff9;
+  z-index: 10;
+
+  &__privacy {
+    color: #ff4d00;
+  }
+}
+
+@media (max-width: 993px) {
+  .copyright {
+    position: relative;
+    width: 100%;
+    text-align: center;
+    left: 50%;
+    transform: translate(-50%);
+    margin-top: 20px;
+    white-space: nowrap;
+  }
+}

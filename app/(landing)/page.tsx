@@ -4,6 +4,7 @@ import {useIsMobile} from "@/hooks/useIsMobile";
 import {FloatingMenu} from "@/widgets/FloatingMenu";
 import {Logo} from "@/components/Logo";
 import {Button} from "@/components/Button";
+import {CopyrightBar} from "@/components/CopyrightBar";
 import {landing} from "@/config/content/landing";
 
 function Page () {
@@ -11,10 +12,12 @@ function Page () {
     const [activeBg, setActiveBg] = useState<string | null>(null);
 
     const handleCategoryEnter = (bg: string) => {
+        if (isMobile) return;
         setActiveBg(bg);
     }
 
     const handleCategoryLeave = () => {
+        if (isMobile) return;
         setActiveBg(null);
     }
 
@@ -73,6 +76,7 @@ function Page () {
                         </div>
                     </div>
                 </div>
+                <CopyrightBar />
             </div>
 
             <FloatingMenu />

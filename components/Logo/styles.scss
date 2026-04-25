@@ -37,3 +37,18 @@
     font-weight: 400;
   }
 }
+
+@media (max-width: 360px) {
+  .logo {
+    @include gap(10, 24);
+    &__image {
+      @include width(22, 80);
+    }
+    &__main-title {
+      @include font-size(16, 42);
+    }
+    &__sub-title {
+      @include font-size(9, 21);
+    }
+  }
+}
