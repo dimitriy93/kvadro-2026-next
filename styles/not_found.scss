@@ -32,10 +32,27 @@
   }
 
   &__visual {
+    position: relative;
     perspective: 2000px;
     width: 70vw;
     display: flex;
     justify-content: center;
+    &::after {
+      content: '';
+      position: absolute;
+      top: 10%;
+      width: 80%;
+      height: 80%;
+      background: rgba(0, 0, 0, 0.6);
+      filter: blur(40px);
+      transform: rotateX(40deg) rotateY(-10deg) translateZ(-100px);
+      z-index: -1;
+      pointer-events: none;
+      transition: transform 0.8s cubic-bezier(0.2, 1, 0.3, 1);
+    }
+    &:hover::after {
+      transform: rotateX(30deg) rotateY(-5deg) translateZ(-80px);
+    }
   }
 
   &__image {
@@ -43,8 +60,10 @@
     height: auto;
     max-width: 1000px;
     transform: rotateX(25deg) rotateY(-10deg) rotateZ(5deg);
-    box-shadow: 0 50px 100px rgba(0, 0, 0, 0.8);
     transition: transform 0.8s cubic-bezier(0.2, 1, 0.3, 1);
+    box-shadow:
+            0 10px 20px rgba(0, 0, 0, 0.5),
+            0 30px 60px rgba(0, 0, 0, 0.3);
 
     &:hover {
       transform: rotateX(15deg) rotateY(-5deg) rotateZ(0deg) scale(1.02);
@@ -84,6 +103,11 @@
 
 @media (max-width: 992px) {
   .not-found {
+    flex-direction: column;
+    &__content {
+      margin-bottom: auto;
+      margin-top: auto;
+    }
     &__visual {
       width: 90vw;
     }
