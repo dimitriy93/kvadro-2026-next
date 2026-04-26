@@ -38,3 +38,12 @@ $max-vw: 1440;
   padding-top: calc-fluid($min, $max);
   padding-bottom: calc-fluid($min, $max);
 }
+
+@mixin glass-panel($padding: 28px, $radius: 12px) {
+  background: rgba(20, 20, 20, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius;
+  padding: $padding;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}

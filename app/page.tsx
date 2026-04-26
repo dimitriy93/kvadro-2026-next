@@ -1,11 +1,11 @@
 "use client";
 import {useState} from "react";
 import {useIsMobile} from "@/hooks/useIsMobile";
-import {FloatingMenu} from "@/widgets/FloatingMenu";
 import {Logo} from "@/components/Logo";
 import {Button} from "@/components/Button";
 import {CopyrightBar} from "@/components/CopyrightBar";
 import {landing} from "@/config/content/landing";
+import "@/styles/landing.scss";
 
 function Page () {
     const isMobile = useIsMobile(992);
@@ -78,8 +78,6 @@ function Page () {
                 </div>
                 <CopyrightBar />
             </div>
-
-            <FloatingMenu />
         </>
     )
 }

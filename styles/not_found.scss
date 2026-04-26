@@ -1,0 +1,99 @@
+@use "vars" as *;
+
+.not-found {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background: #0a0a0a;
+  @include padding-x(20, 100);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('../public/images/background.webp');
+    background-size: cover;
+    background-position: center;
+    filter: blur(8px);
+    z-index: 1;
+  }
+
+  &__content {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 1400px;
+  }
+
+  &__visual {
+    perspective: 2000px;
+    width: 70vw;
+    display: flex;
+    justify-content: center;
+  }
+
+  &__image {
+    width: 100%;
+    height: auto;
+    max-width: 1000px;
+    transform: rotateX(25deg) rotateY(-10deg) rotateZ(5deg);
+    box-shadow: 0 50px 100px rgba(0, 0, 0, 0.8);
+    transition: transform 0.8s cubic-bezier(0.2, 1, 0.3, 1);
+
+    &:hover {
+      transform: rotateX(15deg) rotateY(-5deg) rotateZ(0deg) scale(1.02);
+    }
+  }
+
+  &__info {
+    @include glass-panel(40px);
+    color: #fff;
+    max-width: 600px;
+    text-align: center;
+    position: relative;
+    z-index: 11;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    margin-top: -100px;
+  }
+
+  &__title {
+    @include font-size(28, 42);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+
+  &__desc {
+    @include font-size(14, 18);
+    opacity: 0.7;
+    line-height: 1.6;
+    max-width: 45ch;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 32px;
+  }
+}
+
+@media (max-width: 992px) {
+  .not-found {
+    &__visual {
+      width: 90vw;
+    }
+    &__image {
+      transform: rotateX(15deg) rotateY(-5deg) rotateZ(2deg);
+    }
+    &__info {
+      margin-top: -50px;
+      padding: 24px;
+      width: 100%;
+    }
+  }
+}
