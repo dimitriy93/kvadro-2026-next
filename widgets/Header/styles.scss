@@ -1,0 +1,37 @@
+@use "@/styles/_vars" as *;
+
+.header {
+  @include glass-panel(12);
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+
+  .logo {
+    margin-bottom: 0;
+    @include gap(8, 12);
+    &__image {
+      @include width(30, 50);
+    }
+    &__main-title {
+      @include font-size(16, 24);
+    }
+    &__sub-title {
+      @include font-size(9, 12);
+    }
+  }
+}
+
+@media (max-width: 992px) {
+  .header {
+    @include glass-panel(24, 0);
+    top: 0;
+    display: flex;
+    @include padding-x(20, 100);
+    width: 100%;
+    .logo {
+      margin: 0;
+    }
+  }
+}

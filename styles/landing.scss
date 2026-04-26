@@ -31,7 +31,7 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    max-width: 420px;
+    max-width: 480px;
     text-align: left;
     gap: 28px;
     @include glass-panel();
@@ -124,7 +124,31 @@
 .promo-actions {
   @include gap(12, 16);
   display: flex;
-  margin-top: 10px;
+}
+
+.promo-subnote {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 28px 0;
+
+  &__item {
+    @include font-size(12, 14);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+
+    &:not(:last-child)::after {
+      content: '';
+      width: 4px;
+      height: 4px;
+      background: #ff4d00;
+      border-radius: 50%;
+      margin-left: 10px;
+    }
+  }
 }
 
 .main-overlay {

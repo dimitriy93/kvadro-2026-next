@@ -70,13 +70,20 @@ function Page () {
                         <span className="promo-eyebrow">{landing.eyebrow}</span>
                         <h2 className="promo-heading">{landing.heading}</h2>
                         <p className="promo-text">{landing.text}</p>
+                        <div className="promo-subnote">
+                            {landing.subnote.map((item) => (
+                                <span key={item} className="promo-subnote__item">
+                                    {item}
+                                </span>
+                            ))}
+                        </div>
                         <div className="promo-actions">
-                            <Button mode="primary">{landing.btn_call}</Button>
-                            <Button mode="secondary">{landing.btn_vacancy}</Button>
+                            <Button mode="primary">{landing.btn_primary}</Button>
+                            <Button mode="secondary">{landing.btn_secondary}</Button>
                         </div>
                     </div>
                 </div>
-                <CopyrightBar />
+                <CopyrightBar/>
             </div>
         </>
     )
