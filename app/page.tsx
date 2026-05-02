@@ -4,6 +4,8 @@ import {useIsMobile} from "@/hooks/useIsMobile";
 import {Logo} from "@/components/Logo";
 import {Button} from "@/components/Button";
 import {CopyrightBar} from "@/components/CopyrightBar";
+import {Marker} from "@/components/Marker";
+import {Services} from "@/widgets/Services";
 import {landing} from "@/config/content/landing";
 import "@/styles/landing.scss";
 
@@ -23,18 +25,6 @@ function Page () {
 
     return (
         <>
-            <div className="main-overlay"></div>
-            {landing.categories.map(elem => (
-                <div
-                    key={elem.id}
-                    id={elem.id}
-                    className={`category-bg ${activeBg === elem.id ? 'is-active' : ''}`}
-                    style={{
-                        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/images/${elem.id}.webp')`
-                    }}
-                ></div>
-            ))}
-
             {isMobile && (
                 <div className="mobile-header">
                     <Logo/>
@@ -42,6 +32,18 @@ function Page () {
             )}
 
             <div className="main">
+                <div className="main-overlay"></div>
+                {landing.categories.map(elem => (
+                    <div
+                        key={elem.id}
+                        id={elem.id}
+                        className={`category-bg ${activeBg === elem.id ? 'is-active' : ''}`}
+                        style={{
+                            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/images/${elem.id}.webp')`
+                        }}
+                    ></div>
+                ))}
+
                 <div className="main__wrap">
                     <div className="main__left">
                         {!isMobile && (<Logo />)}
@@ -71,9 +73,10 @@ function Page () {
                         <h2 className="promo-heading">{landing.heading}</h2>
                         <p className="promo-text">{landing.text}</p>
                         <div className="promo-subnote">
-                            {landing.subnote.map((item) => (
+                            {landing.subnote.map((item, i, arr) => (
                                 <span key={item} className="promo-subnote__item">
                                     {item}
+                                    {(i !== arr.length - 1) && <Marker />}
                                 </span>
                             ))}
                         </div>
@@ -85,6 +88,8 @@ function Page () {
                 </div>
                 <CopyrightBar/>
             </div>
+
+            <Services />
         </>
     )
 }

@@ -1,0 +1,10 @@
+@use "@/styles/_vars" as *;
+
+.marker {
+  display: inline-block;
+  @include width(4, 6);
+  @include height(4, 6);
+  background-color: #ff4d00;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
