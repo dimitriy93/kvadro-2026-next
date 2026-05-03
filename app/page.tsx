@@ -6,6 +6,7 @@ import {Button} from "@/components/Button";
 import {CopyrightBar} from "@/components/CopyrightBar";
 import {Marker} from "@/components/Marker";
 import {Services} from "@/widgets/Services";
+import {Stats} from "@/widgets/Stats";
 import {landing} from "@/config/content/landing";
 import "@/styles/landing.scss";
 
@@ -90,6 +91,7 @@ function Page () {
             </div>
 
             <Services />
+            <Stats />
         </>
     )
 }
