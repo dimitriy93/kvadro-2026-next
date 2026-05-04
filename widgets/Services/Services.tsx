@@ -5,14 +5,14 @@ import {landing} from "@/config/content/landing";
 import {SectionHeader} from "@/components/SectionHeader";
 import "./styles.scss";
 
-const {services} = landing;
+const {services, title} = landing;
 
 export const Services = () => {
     return (
         <section className="services">
             <SectionHeader
-                title="Услуги компании"
-                eyebrow="Основные направления"
+                title={title.services.title}
+                eyebrow={title.services.eyebrow}
             />
 
             <div className="services__list">

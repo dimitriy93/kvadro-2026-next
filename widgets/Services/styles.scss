@@ -2,6 +2,7 @@
 
 .services {
   color: #141414;
+  padding-top: clamp(70px, 9vw, 130px);
 
   &__list {
     display: flex;

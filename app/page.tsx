@@ -7,6 +7,7 @@ import {CopyrightBar} from "@/components/CopyrightBar";
 import {Marker} from "@/components/Marker";
 import {Services} from "@/widgets/Services";
 import {Stats} from "@/widgets/Stats";
+import {Clients} from "@/widgets/Clients";
 import {landing} from "@/config/content/landing";
 import "@/styles/landing.scss";
 
@@ -92,6 +93,7 @@ function Page () {
 
             <Services />
             <Stats />
+            <Clients />
         </>
     )
 }
