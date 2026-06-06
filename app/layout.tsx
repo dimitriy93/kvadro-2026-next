@@ -1,6 +1,6 @@
 import {Metadata} from "next";
 import {inter} from "@/app/_assets/fonts";
-import {FloatingMenu} from "@/widgets/FloatingMenu";
+import {FloatingMenu} from "@/widgets/floating-menu";
 import "@/styles/global.scss";
 
 export const metadata: Metadata = {

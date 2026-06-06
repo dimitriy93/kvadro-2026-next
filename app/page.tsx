@@ -1,14 +1,16 @@
 "use client";
-import {useState} from "react";
-import {useIsMobile} from "@/hooks/useIsMobile";
-import {Logo} from "@/components/Logo";
-import {Button} from "@/components/Button";
-import {CopyrightBar} from "@/components/CopyrightBar";
-import {Marker} from "@/components/Marker";
-import {Services} from "@/widgets/Services";
-import {Stats} from "@/widgets/Stats";
-import {Clients} from "@/widgets/Clients";
 import {landing} from "@/config/content/landing";
+import {useState} from "react";
+import {useIsMobile} from "@/hooks/use-is-mobile";
+import {Logo} from "@/components/logo";
+import {Button} from "@/components/button";
+import {CopyrightBar} from "@/components/copyright-bar";
+import {Marker} from "@/components/marker";
+import {Services} from "@/widgets/services";
+import {Stats} from "@/widgets/stats";
+import {Clients} from "@/widgets/clients";
+import {CTA} from "@/widgets/cta";
+import {Footer} from "@/widgets/footer";
 import "@/styles/landing.scss";
 
 function Page () {
@@ -94,6 +96,8 @@ function Page () {
             <Services />
             <Stats />
             <Clients />
+            <CTA />
+            <Footer />
         </>
     )
 }

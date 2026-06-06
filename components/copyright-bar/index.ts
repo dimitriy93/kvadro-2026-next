@@ -1,0 +1,1 @@
+export { CopyrightBar } from "./ui/copyright-bar.ui";
