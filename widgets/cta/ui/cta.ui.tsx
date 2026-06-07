@@ -1,59 +1,59 @@
 "use client";
-import "./cta.styles.scss";
-import { YMaps, Map, Placemark } from "@pbe/react-yandex-maps";
+import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/button";
 import { landing } from "@/config/content/landing";
+import mapImage from "@/app/_assets/images/map.webp";
+import "./cta.styles.scss";
 
-const coords = [55.786994, 38.435561];
+export const CTA = () => {
+    return (
+        <section className="cta">
 
-export const CTA = () => (
-    <section className="cta">
+            <Link
+                href="https://yandex.ru/maps/org/kvadro_arsenal/1290904928/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cta__map"
+                aria-label="Открыть адрес компании на Яндекс Картах"
+            >
+                <Image
+                    src={mapImage}
+                    alt="Расположение офиса Квадро-Арсенал"
+                    fill
+                    sizes="100vw"
+                    className="cta__map-image"
+                />
+            </Link>
 
-        <div className="cta__map">
-            <YMaps>
-                <Map
-                    defaultState={{
-                        center: coords,
-                        zoom: 18,
-                    }}
-                    width="100%"
-                    height="100%"
-                    options={{
-                        suppressMapOpenBlock: true,
-                    }}
-                >
-                    <Placemark
-                        geometry={coords}
-                        options={{
-                            iconLayout: "default#image",
-                            iconImageHref: "/images/logo_baloon.svg",
-                            iconImageSize: [80, 60],
-                            iconImageOffset: [-40, -50],
-                        }}
-                    />
-                </Map>
-            </YMaps>
-        </div>
+            <div className="cta__overlay" />
 
-        {/* Затемнение */}
-        <div className="cta__overlay" />
+            <div className="container">
+                <div className="cta__layout">
+                    <div className="cta__content">
+                        <span className="cta__eyebrow">
+                            Контакты
+                        </span>
+                        <h2 className="cta__title">
+                            Нужна система безопасности для объекта?
+                        </h2>
+                        <p className="cta__text">
+                            Подберем решение под задачи предприятия,
+                            офиса или частного объекта.
+                            Работаем по Электростали и Московской области.
+                        </p>
+                        <div className="cta__actions">
+                            <Button mode="primary">
+                                {landing.btn_primary}
+                            </Button>
 
-        {/* Контент поверх */}
-        <div className="cta__content">
-            <h2 className="cta__title">
-                Нужна система безопасности для объекта?
-            </h2>
-
-            <p className="cta__text">
-                Подберем решение под задачи предприятия, офиса или частного объекта.
-                Работаем по Электростали и Московской области.
-            </p>
-
-            <div className="cta__actions">
-                <Button mode="primary">{landing.btn_primary}</Button>
-                <Button mode="secondary">{landing.btn_secondary}</Button>
+                            <Button mode="secondary">
+                                Контакты
+                            </Button>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-
-    </section>
-);
+        </section>
+    );
+};
