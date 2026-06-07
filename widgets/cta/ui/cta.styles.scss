@@ -1,17 +1,18 @@
 @use "@/styles/vars" as *;
 
 .cta {
-  position: relative;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
   min-height: 700px;
+  width: 100%;
   overflow: hidden;
-  color: #fff;
+  background: #0b0b0b;
 }
 
 .cta__map {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
+  position: relative;
   display: block;
+  overflow: hidden;
 }
 
 .cta__map-image {
@@ -20,123 +21,161 @@
   transition: transform 1.2s ease, filter 1.2s ease;
 }
 
-.cta:hover .cta__map-image {
-  transform: scale(1.02);
+.cta__map:hover .cta__map-image {
+  transform: scale(1.03);
 }
 
-.cta__overlay {
+.cta__map-overlay {
   position: absolute;
   inset: 0;
-  z-index: 2;
-  background:
-  linear-gradient(
-    90deg,
-    rgba(10, 10, 10, 0.92) 0%,
-    rgba(10, 10, 10, 0.70) 35%,
-    rgba(10, 10, 10, 0.25) 70%,
-    rgba(10, 10, 10, 0.05) 100%
-  );
-}
-
-.container {
-  position: relative;
-  z-index: 3;
-  height: 100%;
-}
-
-.cta__layout {
-  min-height: 700px;
   display: flex;
-  justify-content: flex-end;
   align-items: center;
-  padding: clamp(60px, 8vw, 120px) 20px;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0);
+  transition: background 0.35s ease;
+  z-index: 2;
+}
+
+.cta__map:hover .cta__map-overlay {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.cta__map-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 28px;
+  border-radius: 20px;
+  background: rgba(10, 10, 10, 0.82);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease,
+    border-color 0.35s ease;
+}
+
+.cta__map:hover .cta__map-card {
+  opacity: 1;
+  transform: translateY(0);
+  border-color: rgba(255, 90, 0, 0.4);
+}
+
+.cta__map-icon {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(255, 90, 0, 0.15);
+  color: #ff5a00;
+  font-size: 22px;
+  box-shadow: 0 0 20px rgba(255, 90, 0, 0.25);
+}
+
+.cta__map-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.cta__map-label {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.cta__map-text {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 14px;
+}
+
+.cta__map-arrow {
+  color: #ff5a00;
+  font-size: 22px;
+  font-weight: 700;
+  transition: transform 0.25s ease;
+}
+
+.cta__map:hover .cta__map-arrow {
+  transform: translateX(4px);
+}
+
+.cta__panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(15, 15, 15, 0.98), rgba(24, 24, 24, 0.95));
+}
+
+.cta__panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+}
+
+.cta__panel .container {
+  width: 100%;
 }
 
 .cta__content {
-  width: 100%;
   max-width: 560px;
-  padding: 48px;
-  backdrop-filter: blur(18px);
-  background: rgba(15, 15, 15, 0.45);
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 28px;
-  box-shadow: 0 10px 40px rgba(0,0,0,.35);
+  padding: clamp(60px, 6vw, 120px) clamp(20px, 2vw, 40px);
+  color: #fff;
 }
 
 .cta__eyebrow {
-  display: block;
-  margin-bottom: 16px;
+  display: inline-block;
+  margin-bottom: 20px;
+  color: #ff5a00;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .18em;
-  color: #ff4d00;
+  letter-spacing: 0.18em;
 }
 
 .cta__title {
-  @include font-size(30, 58);
+  @include font-size(34, 62);
   font-weight: 700;
   line-height: 1.05;
-  max-width: 12ch;
+  max-width: 11ch;
 }
 
 .cta__text {
   @include font-size(15, 18);
-  margin-top: 24px;
-  line-height: 1.8;
-  color: rgba(255,255,255,.78);
+  margin-top: 28px;
   max-width: 42ch;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .cta__actions {
-  @include gap(12, 16);
   display: flex;
-  margin-top: 36px;
-}
-
-.cta__contacts {
-  margin-top: 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.cta__phone {
-  color: #fff;
-  text-decoration: none;
-  font-weight: 600;
-  transition: opacity .2s ease;
-  &:hover {
-    opacity: .8;
-  }
-}
-
-.cta__address {
-  color: rgba(255,255,255,.65);
-  line-height: 1.6;
-  @include font-size(13, 15);
-}
-
-@media (max-width: 1200px) {
-  .cta__content {
-    max-width: 500px;
-  }
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 40px;
 }
 
 @media (max-width: 992px) {
   .cta {
+    grid-template-columns: 1fr;
     min-height: auto;
   }
 
-  .cta__layout {
-    min-height: auto;
-    justify-content: center;
-    padding: 80px 20px;
+  .cta__map {
+    min-height: 420px;
   }
 
   .cta__content {
-    max-width: 720px;
-    padding: 36px;
+    max-width: 100%;
+    margin-left: 0;
+    padding: 80px clamp(20px, 4vw, 32px);
   }
 
   .cta__title {
@@ -145,46 +184,62 @@
 }
 
 @media (max-width: 768px) {
-  .cta__overlay {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(10,10,10,.92) 0%,
-      rgba(10,10,10,.65) 50%,
-      rgba(10,10,10,.25) 100%
-    );
+  .cta__map {
+    min-height: 320px;
   }
 
-  .cta__layout {
-    padding: 60px 20px;
+  .cta__map-card {
+    padding: 18px;
+  }
+
+  .cta__map-label {
+    font-size: 16px;
+  }
+
+  .cta__map-text {
+    font-size: 13px;
   }
 
   .cta__content {
-    padding: 24px;
-    border-radius: 20px;
+    padding: 60px 20px;
   }
 
   .cta__title {
     font-size: 42px;
-    line-height: 1.05;
+    line-height: 1.1;
   }
 
   .cta__text {
-    margin-top: 18px;
+    margin-top: 20px;
     line-height: 1.7;
   }
 
   .cta__actions {
-    margin-top: 28px;
+    margin-top: 32px;
+  }
+}
+
+@media (max-width: 576px) {
+  .cta__map-card {
+    opacity: 1;
   }
 }
 
 @media (max-width: 480px) {
+  .cta__map {
+    min-height: 260px;
+  }
+
+  .cta__map-card {
+    width: calc(100% - 40px);
+  }
+
   .cta__title {
     font-size: 34px;
   }
 
-  .cta__content {
-    padding: 20px;
+  .cta__actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

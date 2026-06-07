@@ -9,47 +9,44 @@ import "./cta.styles.scss";
 export const CTA = () => {
     return (
         <section className="cta">
-
             <Link
                 href="https://yandex.ru/maps/org/kvadro_arsenal/1290904928/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="cta__map"
-                aria-label="Открыть адрес компании на Яндекс Картах"
+                aria-label={landing.cta.link_map_label}
             >
                 <Image
                     src={mapImage}
-                    alt="Расположение офиса Квадро-Арсенал"
+                    alt={landing.cta.image_map_label}
                     fill
-                    sizes="100vw"
+                    priority
                     className="cta__map-image"
                 />
+                <div className="cta__map-overlay">
+                    <div className="cta__map-card">
+                        <span className="cta__map-icon">📍</span>
+                        <div className="cta__map-info">
+                            <span className="cta__map-label">{landing.cta.map_label}</span>
+                            <span className="cta__map-text">{landing.cta.map_text}</span>
+                    </div>
+                    <span className="cta__map-arrow">→</span>
+                    </div>
+                </div>
             </Link>
 
-            <div className="cta__overlay" />
-
-            <div className="container">
-                <div className="cta__layout">
+            <div className="cta__panel">
+                <div className="container">
                     <div className="cta__content">
-                        <span className="cta__eyebrow">
-                            Контакты
-                        </span>
+                        <span className="cta__eyebrow">{landing.cta.eyebrow}</span>
                         <h2 className="cta__title">
-                            Нужна система безопасности для объекта?
+                            {landing.cta.title}
                         </h2>
-                        <p className="cta__text">
-                            Подберем решение под задачи предприятия,
-                            офиса или частного объекта.
-                            Работаем по Электростали и Московской области.
-                        </p>
-                        <div className="cta__actions">
-                            <Button mode="primary">
-                                {landing.btn_primary}
-                            </Button>
+                        <p className="cta__text">{landing.cta.text}</p>
 
-                            <Button mode="secondary">
-                                Контакты
-                            </Button>
+                        <div className="cta__actions">
+                            <Button mode="primary">{landing.btn_primary}</Button>
+                            <Button mode="secondary">{landing.cta.btn_secondary}</Button>
                         </div>
                     </div>
                 </div>
