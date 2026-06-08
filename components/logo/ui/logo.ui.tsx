@@ -1,13 +1,16 @@
-import Image from "next/image";
 import logo from "@/app/_assets/images/logo.png";
 import "./logo.styles.scss";
 
 export const Logo = () => (
-    <div className="logo">
-        <Image src={logo} alt="Квадро-Арсенал" className="logo__image"/>
-        <h1 className="logo__title">
-            <span className="logo__sub-title">проектно-монтажная организация</span>
-            <span className="logo__main-title">ООО «Квадро-Арсенал»</span>
-        </h1>
-    </div>
+    <svg viewBox="0 0 450 50" className="logo">
+        <image
+            href={String(logo.src)}
+            x="0"
+            y="0"
+            width="50"
+            height="50"
+        />
+        <text x="65" y="18" className="logo__sub-title">проектно-монтажная организация</text>
+        <text x="65" y="45" className="logo__main-title">ООО «Квадро-Арсенал»</text>
+    </svg>
 )

@@ -26,6 +26,15 @@
     z-index: 10;
   }
 
+  &__left {
+    .logo {
+      width: clamp(100%, 30vw, 540px);
+      height: auto;
+      margin-bottom: 36px;
+      zoom: 2.25;
+    }
+  }
+
   &__right {
     color: white;
     display: flex;
@@ -182,6 +191,7 @@
     @include padding-x(20, 100);
     width: 100%;
     .logo {
+      max-width: 490px;
       padding: 24px 0;
       margin: 0;
     }

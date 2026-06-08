@@ -1,49 +1,62 @@
+import Link from "next/link";
+import {Logo} from "@/components/logo";
+import {footer} from "@/config/content/footer";
 import "./footer.styles.scss";
 
 export const Footer = () => (
     <footer className="footer">
-        <div className="footer__container">
+        <div className="container">
 
-            <div className="footer__col">
-                <h3 className="footer__logo">Квадро-Арсенал</h3>
-                <p className="footer__desc">
-                    Комплексные решения в сфере безопасности.
-                </p>
+            <div className="footer__grid">
+                <div className="footer__brand">
+                    <Logo/>
+                    <p className="footer__description">{footer.description}</p>
+                </div>
+
+                <nav className="footer__column">
+                    <span className="footer__title">{footer.services_title}</span>
+                    <ul className="footer__list">
+                        {footer.services.map((item) => (
+                            <li key={item.label}>
+                                <Link href={item.href} className="link">{item.label}</Link>
+                            </li>
+                        ))}
+                    </ul>
+                </nav>
+
+                <nav className="footer__column">
+                    <span className="footer__title">{footer.second_menu_title}</span>
+                    <ul className="footer__list">
+                        {footer.second_menu.map((item) => (
+                            <li key={item.label}>
+                                <Link href={item.href} className="link">{item.label}</Link>
+                            </li>
+                        ))}
+                    </ul>
+                </nav>
+
+                <div className="footer__column">
+                    <span className="footer__title">{footer.contact_title}</span>
+
+                    <address className="footer__contacts">
+                        {footer.contact.map((item) => (
+                            <li key={item.label}>
+                                <Link href={item.href} className={`${item.className} link`.trim()}>{item.label}</Link>
+                            </li>
+                        ))}
+                        <span className="footer__address">
+                                {footer.contact_address.join('\n')}
+                            </span>
+                    </address>
+                </div>
             </div>
 
-            <div className="footer__col">
-                <span className="footer__title">Услуги</span>
-                <ul>
-                    <li>Пожарная безопасность</li>
-                    <li>Охранная сигнализация</li>
-                    <li>Слаботочные системы</li>
-                    <li>Охрана объектов</li>
-                </ul>
+            <div className="footer__bottom">
+                <span>{footer.footer_bottom.copyright}</span>
+                <Link href={footer.footer_bottom.privacy.href}>
+                    {footer.footer_bottom.privacy.label}
+                </Link>
             </div>
-
-            <div className="footer__col">
-                <span className="footer__title">Компания</span>
-                <ul>
-                    <li>О нас</li>
-                    <li>Контакты</li>
-                    <li>Цены</li>
-                    <li>Статьи</li>
-                </ul>
-            </div>
-
-            <div className="footer__col">
-                <span className="footer__title">Контакты</span>
-                <p>г. Электросталь</p>
-                <p>ул. Чернышевского, 20</p>
-                <p>Телефон</p>
-                <p>Email</p>
-            </div>
-
-        </div>
-
-        <div className="footer__bottom">
-            <span>© 2026 Квадро-Арсенал</span>
-            <span>Политика конфиденциальности</span>
         </div>
     </footer>
 )
