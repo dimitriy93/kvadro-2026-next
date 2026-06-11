@@ -1,6 +1,6 @@
 import Link from "next/link";
-import {Logo} from "@/components/logo";
 import {footer} from "@/config/content/footer";
+import {Logo} from "@/components/logo";
 import "./footer.styles.scss";
 
 export const Footer = () => (

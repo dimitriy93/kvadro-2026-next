@@ -10,10 +10,12 @@ const {services, title} = landing;
 export const Services = () => {
     return (
         <section className="services">
-            <SectionHeader
-                title={title.services.title}
-                eyebrow={title.services.eyebrow}
-            />
+            <div className="services__container">
+                <SectionHeader
+                    title={title.services.title}
+                    eyebrow={title.services.eyebrow}
+                />
+            </div>
 
             <div className="services__list">
                 {services.map((item, index) => (

@@ -2,7 +2,12 @@
 
 .services {
   color: #141414;
-  padding-top: clamp(70px, 9vw, 130px);
+
+  &__container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: clamp(70px, 9vw, 130px) 20px 0;
+  }
 
   &__list {
     display: flex;
