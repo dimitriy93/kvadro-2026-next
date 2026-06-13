@@ -1,5 +1,3 @@
-@use "@/styles/_vars" as *;
-
 .header {
   @include glass-panel(12);
   position: absolute;
@@ -20,18 +18,28 @@
     &__sub-title {
       @include font-size(9, 12);
     }
+    &__container {
+      display: flex;
+      align-items: center;
+    }
   }
 }
 
 @media (max-width: 992px) {
   .header {
     @include glass-panel(24, 0);
+    @include padding-x(20, 100);
     top: 0;
     display: flex;
-    @include padding-x(20, 100);
+    max-height: 110px;
     width: 100%;
+    &__container {
+      width: 100%;
+      padding-inline: clamp(24px, 5vw, 80px);
+      justify-content: flex-start;
+    }
     .logo {
-      margin: 0;
+      width: min(100%, 450px);
     }
   }
 }

@@ -1,8 +1,8 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { Button } from "@/components/button";
 import { landing } from "@/config/content/landing";
+import { Button } from "@/components/button";
 import mapImage from "@/app/_assets/images/map.webp";
 import "./cta.styles.scss";
 

@@ -1,0 +1,35 @@
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  &__eyebrow {
+    @include font-size(8, 12);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+  &__title {
+    @include font-size(34, 64);
+    letter-spacing: -.03em;
+    line-height: .95;
+    font-weight: 700;
+  }
+  &--dark {
+    .heading__eyebrow {
+      font-weight: 700;
+      color: #ff5a00;
+    }
+    .heading__title {
+      color: #fff;
+    }
+  }
+
+  &--light {
+    .heading__eyebrow {
+      color: #14141473;
+    }
+    .heading__title {
+      color: #141414;
+    }
+  }
+}
