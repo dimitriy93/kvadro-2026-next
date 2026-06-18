@@ -1,4 +1,4 @@
-import mapImage from "@/app/_assets/images/map.webp";
+import mapImage from "@/app/_assets/images/common/map.webp";
 import officeImage from "@/app/_assets/images/office_pic.webp";
 import Image from "next/image";
 import Link from "next/link";

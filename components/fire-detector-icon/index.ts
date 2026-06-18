@@ -1,0 +1,1 @@
+export { FireDetectorIcon } from "./ui/fire-detector-icon.ui";

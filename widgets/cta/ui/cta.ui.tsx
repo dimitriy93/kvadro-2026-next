@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
+import { mapImg } from "@/app/_assets/images/common";
 import { landing } from "@/config/content/landing";
 import { Button } from "@/components/button";
-import mapImage from "@/app/_assets/images/map.webp";
 import "./cta.styles.scss";
 
 export const CTA = ({ onOpenQuiz }) => (
@@ -16,7 +16,7 @@ export const CTA = ({ onOpenQuiz }) => (
             aria-label={landing.cta.link_map_label}
         >
             <Image
-                src={mapImage}
+                src={mapImg}
                 alt={landing.cta.image_map_label}
                 fill
                 priority
