@@ -38,7 +38,7 @@ export const FloatingMenu = () => {
                     {menu.links.map((link, i) => (
                         <li key={i}>
                             <span className="menu-item-mask">
-                              <a href={link.href}>{link.label}</a>
+                              <a href={link.href} className="link">{link.label}</a>
                             </span>
                         </li>
                     ))}
