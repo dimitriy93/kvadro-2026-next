@@ -2,7 +2,7 @@ export const menu = {
     label: "Меню",
     links: [
         { label: "О компании", href: "/about" },
-        { label: "Услуги", href: "/service" },
+        { label: "Услуги", href: "/services" },
         { label: "Статьи", href: "/articles" },
         { label: "Документы", href: "/documents" },
         { label: "Контакты", href: "/contacts" },

@@ -10,7 +10,7 @@ export const footer = {
     second_menu_title: "Компания",
     second_menu: [
         { href: "/about", label: "О компании" },
-        { href: "/service", label: "Услуги" },
+        { href: "/services", label: "Услуги" },
         { href: "/articles", label: "Статьи" },
         { href: "/news", label: "Новости" },
         { href: "/documents", label: "Документы" },

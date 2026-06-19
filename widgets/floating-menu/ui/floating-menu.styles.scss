@@ -118,9 +118,7 @@
   @include padding-y(30, 60);
   border-radius: 20px;
   z-index: 100;
-  transition:
-          transform .45s cubic-bezier(.19, 1, .22, 1),
-          opacity .35s ease;
+  transition: transform .45s cubic-bezier(.19, 1, .22, 1), opacity .35s ease;
   border: 10px solid #fff;
 
   &.active {
@@ -274,5 +272,11 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 576px) {
+  .menu-panel.active {
+    width: 80%;
   }
 }
