@@ -1,3 +1,21 @@
+h1.heading {
+  &__title {
+    @include font-size(34, 64);
+  }
+}
+
+h2.heading {
+  &__title {
+    @include font-size(34, 64);
+  }
+}
+
+h3.heading {
+  &__title {
+    @include font-size(28, 52);
+  }
+}
+
 .heading {
   display: flex;
   flex-direction: column;
@@ -9,7 +27,6 @@
     text-transform: uppercase;
   }
   &__title {
-    @include font-size(34, 64);
     letter-spacing: -.03em;
     line-height: .95;
     font-weight: 700;

@@ -1,0 +1,1 @@
+export { ConsultationBlock } from "./ui/consultation-block.ui";

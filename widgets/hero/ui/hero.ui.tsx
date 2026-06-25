@@ -3,7 +3,7 @@ import {useIsMobile} from "@/hooks/use-is-mobile";
 import {Logo} from "@/components/logo";
 import {Marker} from "@/components/marker";
 import {Button} from "@/components/button";
-import {landing} from "@/config/content/landing";
+import {categories, subnote} from "./hero.data";
 
 export const Hero = ({ onOpenQuiz }) => {
     const isMobile = useIsMobile(992);
@@ -29,7 +29,7 @@ export const Hero = ({ onOpenQuiz }) => {
 
             <div className="main">
                 <div className="main-overlay"></div>
-                {landing.categories.map(elem => (
+                {categories.map(elem => (
                     <div
                         key={elem.id}
                         id={elem.id}
@@ -49,7 +49,7 @@ export const Hero = ({ onOpenQuiz }) => {
                             </h2>
                         )}
                         <ul className="categories">
-                            {landing.categories.map(elem => (
+                            {categories.map(elem => (
                                 <li
                                     className="categories__item"
                                     data-bg={elem.id}
@@ -65,11 +65,21 @@ export const Hero = ({ onOpenQuiz }) => {
                     </div>
 
                     <div className="main__right">
-                        <span className="promo-eyebrow">{landing.eyebrow}</span>
-                        <h2 className="promo-heading">{landing.heading}</h2>
-                        <p className="promo-text">{landing.text}</p>
+                        <span className="promo-eyebrow">
+                            Проектирование и монтаж
+                        </span>
+                        <h2 className="promo-heading">
+                            Системы безопасности для бизнеса и объектов
+                        </h2>
+                        <p className="promo-text">
+                            Проектируем, монтируем и обслуживаем системы
+                            безопасности для предприятий и объектов.
+                            Работаем в Электростали и Московской области.
+                            Берем на себя весь цикл — от обследования до
+                            круглосуточного мониторинга.
+                        </p>
                         <div className="promo-subnote">
-                            {landing.subnote.map((item, i, arr) => (
+                            {subnote.map((item, i, arr) => (
                                 <span key={item} className="promo-subnote__item">
                                     {item}
                                     {(i !== arr.length - 1) && <Marker />}
@@ -78,9 +88,12 @@ export const Hero = ({ onOpenQuiz }) => {
                         </div>
                         <div className="promo-actions">
                             <Button mode="primary" onClick={onOpenQuiz}>
-                                {landing.btn_primary}
+                                Получить расчет
                             </Button>
-                            <Button mode="secondary">{landing.btn_secondary}</Button>
+
+                            <Button mode="secondary">
+                                Консультация
+                            </Button>
                         </div>
                     </div>
                 </div>

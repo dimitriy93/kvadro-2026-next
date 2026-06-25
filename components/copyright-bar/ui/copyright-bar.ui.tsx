@@ -1,11 +1,13 @@
-import {copyright} from "@/config/content/copyright";
+import {routes} from "@/config/routes/main.routes";
 import "./copyright-bar.styles.scss";
 
 export const CopyrightBar =  () => (
     <div className="copyright">
         <div className="copyright__item">
-            © {copyright.foundation_year}-{new Date().getFullYear()} {copyright.company}
+            © 1992-{new Date().getFullYear()} ООО ПМО "Квадро-Арсенал"
         </div>
-        <a href={copyright.privacy_link} className="copyright__privacy link">{copyright.privacy_text}</a>
+        <a href={routes.privacy.href} className="copyright__privacy link">
+            {routes.privacy.title}
+        </a>
     </div>
 )

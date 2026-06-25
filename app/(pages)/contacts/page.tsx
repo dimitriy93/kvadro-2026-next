@@ -3,6 +3,7 @@ import officeImage from "@/app/_assets/images/office_pic.webp";
 import Image from "next/image";
 import Link from "next/link";
 import {Heading} from "@/components/heading";
+import {ConsultationBlock} from "@/components/consultation-block";
 import "./contacts.styles.scss";
 
 const ContactsPage = () => (
@@ -99,28 +100,18 @@ const ContactsPage = () => (
                             <span>Построить маршрут →</span>
                         </div>
                     </Link>
-
                 </div>
 
             </section>
 
-            <section className="contacts__cta">
-                <div className="contacts-cta">
-                    <div className="contacts-cta__content">
-                        <Heading eyebrow="Нужна консультация?" mode="dark" as="h2">
-                            Подберём решение под ваш объект
-                        </Heading>
-                        <p>
-                            Поможем определить состав оборудования,
-                            подготовим предварительный расчёт
-                            и ответим на технические вопросы.
-                        </p>
-                    </div>
-                    <a href="tel:+74951234567" className="contacts-cta__button">
-                        Связаться с нами
-                    </a>
-                </div>
-            </section>
+            <ConsultationBlock
+                eyebrow="Нужна консультация?"
+                heading="Подберём решение под ваш объект"
+                buttonText="Связаться с нами"
+            >
+                Поможем определить состав оборудования,
+                подготовим предварительный расчёт и ответим на технические вопросы.
+            </ConsultationBlock>
         </div>
 
     </main>

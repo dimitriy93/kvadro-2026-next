@@ -1,7 +1,8 @@
 "use client"
 import {useState} from "react";
 import {Button} from "@/components/button";
-import {menu} from "@/config/content/menu";
+import {contacts} from "@/config/brand/contacts";
+import {floatingMenu} from "@/config/navigation/menu";
 import "./floating-menu.styles.scss";
 
 export const FloatingMenu = () => {
@@ -21,7 +22,9 @@ export const FloatingMenu = () => {
             <div className={`floating-menu ${activeClass}`} onClick={toggleMenu}>
                 <div className="floating-menu__content">
                     <div className="floating-menu__label-wrap">
-                        <div className="floating-menu__label">{menu.label}</div>
+                        <div className="floating-menu__label">
+                            Меню
+                        </div>
                     </div>
                     <div className="floating-menu__burger">
                         <span></span>
@@ -33,12 +36,14 @@ export const FloatingMenu = () => {
 
             <div className={`menu-overlay ${activeClass}`} onClick={closeMenu}></div>
             <nav className={`menu-panel ${activeClass}`}>
-                <span className="promo-eyebrow">{menu.label}</span>
+                <span className="promo-eyebrow">
+                    Меню
+                </span>
                 <ul className="menu-list">
-                    {menu.links.map((link, i) => (
+                    {floatingMenu.map((link, i) => (
                         <li key={i}>
                             <span className="menu-item-mask">
-                              <a href={link.href} className="link">{link.label}</a>
+                              <a href={link.href} className="link">{link.title}</a>
                             </span>
                         </li>
                     ))}
@@ -46,10 +51,12 @@ export const FloatingMenu = () => {
 
                 <div className="menu-footer">
                     <div className="menu-contact">
-                        <div className="menu-phone">{menu.phone}</div>
-                        <div className="menu-address">{menu.address}</div>
+                        <div className="menu-phone">{contacts.phone}</div>
+                        <div className="menu-address">{contacts.address}</div>
                     </div>
-                    <Button mode="primary-inverted">{menu.cta}</Button>
+                    <Button mode="primary-inverted">
+                        Связаться с нами
+                    </Button>
                 </div>
             </nav>
         </>

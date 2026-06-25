@@ -1,8 +1,6 @@
 "use client";
-import {landing} from "@/config/content/landing";
+import {stats} from "./stats.data";
 import "./stats.styles.scss";
-
-const {stats} = landing;
 
 export const Stats = () => (
     <section className="stats">
