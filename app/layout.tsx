@@ -1,6 +1,7 @@
 import {Metadata} from "next";
 import {inter} from "@/app/_assets/fonts";
 import {FloatingMenu} from "@/widgets/floating-menu";
+import {ConsultationProvider} from "@/providers/consultation-provider";
 import "@/styles/global.scss";
 
 export const metadata: Metadata = {
@@ -15,8 +16,10 @@ export default function LandingLayout({ children }) {
     return (
         <html lang="ru" className={inter.className}>
             <body>
-                { children }
-                <FloatingMenu />
+                <ConsultationProvider>
+                    { children }
+                    <FloatingMenu />
+                </ConsultationProvider>
             </body>
         </html>
     )

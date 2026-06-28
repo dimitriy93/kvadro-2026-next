@@ -19,6 +19,7 @@
   width: min(720px, 100%);
   max-height: calc(100vh - 40px);
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 40px;
   border-radius: 12px;
   background: rgba(15, 15, 15, 0.96);
@@ -43,6 +44,7 @@
   font-size: 22px;
   cursor: pointer;
   transition: 0.2s ease;
+  z-index: 100;
 }
 
 .popup__close:hover {
@@ -53,13 +55,11 @@
   .popup {
     padding: 12px;
   }
-
   .popup__content {
     padding: 28px 20px;
     border-radius: 12px;
     max-height: calc(100vh - 24px);
   }
-
   .popup__close {
     top: 16px;
     right: 16px;

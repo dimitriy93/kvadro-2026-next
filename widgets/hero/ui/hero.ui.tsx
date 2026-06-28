@@ -3,6 +3,7 @@ import {useIsMobile} from "@/hooks/use-is-mobile";
 import {Logo} from "@/components/logo";
 import {Marker} from "@/components/marker";
 import {Button} from "@/components/button";
+import {useConsultation} from "@/providers/consultation-provider";
 import {categories, subnote} from "./hero.data";
 
 export const Hero = ({ onOpenQuiz }) => {
@@ -18,6 +19,8 @@ export const Hero = ({ onOpenQuiz }) => {
         if (isMobile) return;
         setActiveBg(null);
     }
+
+    const { openConsultation } = useConsultation();
 
     return (
         <>
@@ -91,7 +94,7 @@ export const Hero = ({ onOpenQuiz }) => {
                                 Получить расчет
                             </Button>
 
-                            <Button mode="secondary">
+                            <Button mode="secondary" onClick={openConsultation}>
                                 Консультация
                             </Button>
                         </div>
