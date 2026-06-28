@@ -23,10 +23,9 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  transition:
-    transform .25s ease,
-    border-color .25s ease,
-    box-shadow .25s ease;
+  transition: transform .25s ease,
+  border-color .25s ease,
+  box-shadow .25s ease;
 
   &:hover .client-card__image {
     filter: grayscale(0%);
@@ -36,14 +35,14 @@
   &:hover {
     transform: translateY(-4px);
     border-color: rgba(255, 77, 0, 0.35);
-    box-shadow: 0 16px 40px rgba(0,0,0,.06);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, .06);
   }
 
   &__media {
     position: relative;
     height: 106px;
     width: 100%;
-    border-bottom: 1px solid rgba(20,20,20,.05);
+    border-bottom: 1px solid rgba(20, 20, 20, .05);
     padding-bottom: 14px;
 
     img {
@@ -66,7 +65,7 @@
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.14em;
-    color: rgba(20,20,20,.45);
+    color: rgba(20, 20, 20, .45);
   }
 
   &__name {
@@ -79,7 +78,7 @@
 
 .clients__bottom {
   margin-top: 26px;
-  color: rgba(20,20,20,.56);
+  color: rgba(20, 20, 20, .56);
   font-size: 14px;
 }
 
@@ -93,15 +92,12 @@
   .clients {
     padding-inline: 16px;
   }
-
   .clients__grid {
     grid-template-columns: 1fr;
   }
-
   .client-card {
     min-height: auto;
   }
-
   .client-card__media {
     height: 64px;
   }

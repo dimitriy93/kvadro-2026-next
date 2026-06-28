@@ -1,1 +1,1 @@
-export { SectionHeader } from "./ui/section-header.ui";
+export { SectionHeader } from './ui/section-header.ui';

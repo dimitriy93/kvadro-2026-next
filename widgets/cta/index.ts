@@ -1,1 +1,1 @@
-export { CTA } from "./ui/cta.ui";
+export { CTA } from './ui/cta.ui';

@@ -1,1 +1,1 @@
-export { ConsultationPopup } from "./ui/consultation-popup.ui"
+export { ConsultationPopup } from './ui/consultation-popup.ui';

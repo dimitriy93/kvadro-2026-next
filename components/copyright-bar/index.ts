@@ -1,1 +1,1 @@
-export { CopyrightBar } from "./ui/copyright-bar.ui";
+export { CopyrightBar } from './ui/copyright-bar.ui';

@@ -51,10 +51,9 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   opacity: 0;
   transform: translateY(16px);
-  transition:
-    opacity 0.35s ease,
-    transform 0.35s ease,
-    border-color 0.35s ease;
+  transition: opacity 0.35s ease,
+  transform 0.35s ease,
+  border-color 0.35s ease;
 }
 
 .cta__map:hover .cta__map-card {
@@ -167,17 +166,14 @@
     grid-template-columns: 1fr;
     min-height: auto;
   }
-
   .cta__map {
     min-height: 420px;
   }
-
   .cta__content {
     max-width: 100%;
     margin-left: 0;
     padding: 80px clamp(20px, 4vw, 32px);
   }
-
   .cta__title {
     max-width: none;
   }
@@ -187,33 +183,26 @@
   .cta__map {
     min-height: 320px;
   }
-
   .cta__map-card {
     padding: 18px;
   }
-
   .cta__map-label {
     font-size: 16px;
   }
-
   .cta__map-text {
     font-size: 13px;
   }
-
   .cta__content {
     padding: 60px 20px;
   }
-
   .cta__title {
     font-size: 42px;
     line-height: 1.1;
   }
-
   .cta__text {
     margin-top: 20px;
     line-height: 1.7;
   }
-
   .cta__actions {
     margin-top: 32px;
   }
@@ -229,15 +218,12 @@
   .cta__map {
     min-height: 260px;
   }
-
   .cta__map-card {
     width: calc(100% - 40px);
   }
-
   .cta__title {
     font-size: 34px;
   }
-
   .cta__actions {
     flex-direction: column;
     align-items: stretch;

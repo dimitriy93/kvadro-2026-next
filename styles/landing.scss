@@ -55,7 +55,6 @@
   display: flex;
   flex-direction: column;
   z-index: 10;
-
   @media (hover: hover) {
     &:hover .categories__item:not(:hover) {
       opacity: 0.3;
@@ -100,6 +99,7 @@
     text-transform: uppercase;
     letter-spacing: 0.02em;
     position: relative;
+
     &::after {
       content: '';
       position: absolute;
@@ -124,7 +124,7 @@
 }
 
 .promo-text {
-  @include font-size(12 ,16);
+  @include font-size(12, 16);
   line-height: 1.7;
   color: rgba(255, 255, 255, 0.7);
   max-width: 40ch;
@@ -175,6 +175,7 @@
   background-size: cover;
   background-position: center;
   z-index: 0;
+
   &.is-active {
     opacity: 1;
     z-index: 1;
@@ -190,19 +191,20 @@
     display: flex;
     @include padding-x(20, 100);
     width: 100%;
+
     .logo {
       max-width: 490px;
       padding: 24px 0;
       margin: 0;
     }
   }
- .main__wrap {
-   flex-direction: column;
-   justify-content: normal;
-   align-items: flex-start;
-   gap: 36px;
-   padding: 136px 0 62px;
- }
+  .main__wrap {
+    flex-direction: column;
+    justify-content: normal;
+    align-items: flex-start;
+    gap: 36px;
+    padding: 136px 0 62px;
+  }
   .main__right {
     order: -1;
     width: 100%;

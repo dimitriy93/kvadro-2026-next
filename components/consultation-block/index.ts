@@ -1,1 +1,1 @@
-export { ConsultationBlock } from "./ui/consultation-block.ui";
+export { ConsultationBlock } from './ui/consultation-block.ui';

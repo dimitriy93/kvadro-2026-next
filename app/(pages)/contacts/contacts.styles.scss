@@ -1,8 +1,7 @@
 .contacts {
   --accent: #ff5a00;
   --glass: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .02));
-  --border: 1px solid rgba(255,255,255,.08);
-
+  --border: 1px solid rgba(255, 255, 255, .08);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -30,6 +29,7 @@
   &--left {
     @include absolute($top: 120px, $left: -250px);
   }
+
   &--right {
     @include absolute($right: -250px, $bottom: 100px);
   }
@@ -53,7 +53,7 @@
   @include font-size(15, 18);
   max-width: 720px;
   line-height: 1.7;
-  color: rgba(255,255,255,.65);
+  color: rgba(255, 255, 255, .65);
 }
 
 .contacts__cards {
@@ -79,7 +79,7 @@
 .contacts-card__label {
   display: block;
   margin-bottom: 18px;
-  color: rgba(255,255,255,.45);
+  color: rgba(255, 255, 255, .45);
   font-size: 14px;
 }
 
@@ -94,7 +94,7 @@
 
 .contacts-card__hint {
   margin-top: 18px;
-  color: rgba(255,255,255,.55);
+  color: rgba(255, 255, 255, .55);
   line-height: 1.6;
 }
 
@@ -108,7 +108,7 @@
   }
 
   p {
-    color: rgba(255,255,255,.6);
+    color: rgba(255, 255, 255, .6);
   }
 }
 
@@ -140,14 +140,14 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 32px;
-  background: linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.65));
+  background: linear-gradient(180deg, rgba(0, 0, 0, .25), rgba(0, 0, 0, .65));
 }
 
 .contacts-map__badge,
 .contacts-location__overlay {
-  background: rgba(0,0,0,.45);
+  background: rgba(0, 0, 0, .45);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,.1);
+  border: 1px solid rgba(255, 255, 255, .1);
 }
 
 .contacts-map__badge {
@@ -192,7 +192,7 @@
   justify-content: flex-end;
   gap: 12px;
   padding: 32px;
-  background: linear-gradient(180deg, transparent, rgba(0,0,0,.75));
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, .75));
 }
 
 .contacts-location__content {
@@ -212,7 +212,6 @@
   .contacts-location {
     grid-template-columns: 1fr;
   }
-
   .contacts-map,
   .contacts-location__photo,
   .contacts-location__map {

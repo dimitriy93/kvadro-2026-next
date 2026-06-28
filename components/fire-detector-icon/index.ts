@@ -1,1 +1,1 @@
-export { FireDetectorIcon } from "./ui/fire-detector-icon.ui";
+export { FireDetectorIcon } from './ui/fire-detector-icon.ui';

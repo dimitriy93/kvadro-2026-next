@@ -1,1 +1,1 @@
-export { Quiz } from "./ui/quiz.ui";
+export { Quiz } from './ui/quiz.ui';

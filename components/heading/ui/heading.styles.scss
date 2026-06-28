@@ -26,16 +26,19 @@ h3.heading {
     letter-spacing: .12em;
     text-transform: uppercase;
   }
+
   &__title {
     letter-spacing: -.03em;
     line-height: .95;
     font-weight: 700;
   }
+
   &--dark {
     .heading__eyebrow {
       font-weight: 700;
       color: #ff5a00;
     }
+
     .heading__title {
       color: #fff;
     }
@@ -45,6 +48,7 @@ h3.heading {
     .heading__eyebrow {
       color: #14141473;
     }
+
     .heading__title {
       color: #141414;
     }

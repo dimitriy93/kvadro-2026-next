@@ -1,1 +1,1 @@
-export { FloatingMenu } from "./ui/floating-menu.ui";
+export { FloatingMenu } from './ui/floating-menu.ui';

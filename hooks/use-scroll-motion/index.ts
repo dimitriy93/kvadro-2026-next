@@ -1,1 +1,1 @@
-export { useScrollMotion } from "./use-scroll-motion";
+export { useScrollMotion } from './use-scroll-motion';

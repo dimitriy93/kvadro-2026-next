@@ -9,12 +9,14 @@
   display: flex;
   gap: 8px;
   padding-right: 40px;
+
   &-item {
     flex: 1;
     height: 4px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.08);
     transition: 0.3s ease;
+
     &.is-active {
       background: #ff5a00;
     }
@@ -47,9 +49,11 @@
   color: #fff;
   cursor: pointer;
   transition: 0.2s ease;
+
   &:hover {
     background: rgba(255, 255, 255, 0.08);
   }
+
   &.is-active {
     border-color: #ff5a00;
     background: rgba(255, 90, 0, 0.12);
@@ -76,11 +80,13 @@
   background: #ff5a00;
   color: #fff;
   cursor: pointer;
+
   &:disabled {
     opacity: 0.1;
     cursor: not-allowed;
     filter: none;
   }
+
   &:disabled:hover {
     filter: none;
   }
@@ -150,6 +156,7 @@
   color: #fff;
   cursor: pointer;
   transition: 0.2s ease;
+
   &:hover {
     filter: brightness(1.05);
     background: #ff5a00;
@@ -164,6 +171,7 @@
   cursor: pointer;
   transition: 0.2s ease;
   text-decoration: underline;
+
   &:hover {
     border-color: rgba(255, 255, 255, 0.4);
     color: #fff;
@@ -187,9 +195,11 @@
     flex-direction: column;
     align-items: center;
   }
+
   input {
     min-width: 50%;
   }
+
   .quiz__actions {
     flex-direction: column;
     margin-top: 0;

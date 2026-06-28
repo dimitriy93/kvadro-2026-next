@@ -49,12 +49,11 @@
   &__overlay {
     position: absolute;
     inset: 0;
-    background:
-      linear-gradient(
-        180deg,
-        rgba(0, 0, 0, 0.08),
-        rgba(0, 0, 0, 0.34)
-      );
+    background: linear-gradient(
+                    180deg,
+                    rgba(0, 0, 0, 0.08),
+                    rgba(0, 0, 0, 0.34)
+    );
   }
 
   &__content {
@@ -119,25 +118,20 @@
     grid-template-columns: 1fr;
     min-height: auto;
   }
-
   .service--reverse .service__media,
   .service--reverse .service__content {
     order: initial;
   }
-
   .service__media {
     height: 46vh;
   }
-
   .service__content {
     padding: 34px 22px 44px;
     gap: 22px;
   }
-
   .service__name {
     max-width: none;
   }
-
   .services__head {
     padding: 70px 22px 44px;
   }

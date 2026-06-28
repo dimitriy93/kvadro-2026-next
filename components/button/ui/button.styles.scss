@@ -14,6 +14,7 @@
   border: none;
   font-weight: 500;
   letter-spacing: 0.04em;
+
   &:hover {
     background: #ff6a2c;
     transform: translateY(-2px);
@@ -23,6 +24,7 @@
 .btn-secondary {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.25);
+
   &:hover {
     border-color: white;
     background: rgba(255, 255, 255, 0.05);
@@ -39,6 +41,7 @@
   text-transform: uppercase;
   cursor: pointer;
   transition: transform .25s ease, background .25s ease;
+
   &:hover {
     border: 1px solid #ff4d00;
     background: #ff4d00;
