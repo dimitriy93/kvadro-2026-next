@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import fireAlarmImage from '@/app/_assets/images/services/fire-alarm.webp';
+import videoSurveillanceImage from '@/app/_assets/images/service_security_monitoring.webp';
 import { Heading } from '@/components/heading';
 import { ConsultationBlock } from '@/components/consultation-block';
 import { Button } from '@/components/button';
@@ -10,7 +10,6 @@ import {SpotlightCard} from "@/components/spotlight-card";
 import {getWorkIcon, IconCheck, IconDocument} from "@/components/service-icons";
 import { useConsultation } from '@/providers/consultation-provider';
 import {
-  advantages,
   deliverables,
   equipmentBrands,
   faq,
@@ -20,22 +19,23 @@ import {
   whyUs,
   workflowSteps,
   works,
-} from './fire-alarm.data';
+} from './video-surveillance.data';
+import './video-surveillance.styles.scss';
 
-const FireAlarmPage = () => {
+const VideoSurveillancePage = () => {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const { openConsultation } = useConsultation();
 
   return (
-    <main className="sp sp--fire">
-      <div className="sp__glow sp__glow--left"/>
-      <div className="sp__glow sp__glow--right"/>
+    <main className="sp sp--video">
+      <div className="sp__glow sp__glow--left" />
+      <div className="sp__glow sp__glow--right" />
 
       <div className="container">
-      <section className="sp-hero">
+        <section className="sp-hero">
           <div className="sp-hero__content">
-            <Heading eyebrow="Пожарная безопасность" mode="dark" as="h1">
-              Проектирование и монтаж систем пожарной сигнализации
+            <Heading eyebrow="Видеонаблюдение" mode="dark" as="h1">
+              Проектирование и монтаж систем видеонаблюдения
             </Heading>
             <p className="sp-hero__lead">{heroIntro[0]}</p>
             <div className="sp-hero__actions">
@@ -46,23 +46,14 @@ const FireAlarmPage = () => {
           </div>
 
           <div className="sp-hero__image">
-            <Image src={fireAlarmImage} alt="Монтаж систем пожарной сигнализации" fill priority />
-            <span className="sp-hero__badge">Инженерные системы безопасности</span>
+            <Image src={videoSurveillanceImage} alt="Система видеонаблюдения" fill priority />
+            <span className="sp-hero__badge">Видеоконтроль и безопасность</span>
           </div>
-        </section>
-
-        <section className="sp-advantages" aria-label="Преимущества компании">
-          {advantages.map((item) => (
-            <article className="sp-advantage" key={item.label}>
-              <strong>{item.label}</strong>
-              <span>{item.text}</span>
-            </article>
-          ))}
         </section>
 
         <section className="sp-section">
           <Heading mode="dark" as="h2">
-            Комплексная противопожарная защита
+            Современные системы видеоконтроля
           </Heading>
           <div className="sp-intro">
             {heroIntro.slice(1).map((paragraph) => (
@@ -93,12 +84,25 @@ const FireAlarmPage = () => {
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
-                  {'note' in work && work.note && (
-                    <p className="sp-work__note">{work.note}</p>
-                  )}
                 </SpotlightCard>
               );
             })}
+          </div>
+        </section>
+
+        <section className="sp-section">
+          <Heading mode="dark" as="h2">
+            Для каких объектов
+          </Heading>
+          <p className="sp-regulations__intro">
+            Мы устанавливаем системы видеонаблюдения на объектах любого назначения:
+          </p>
+          <div className="sp-objects">
+            {objectTypes.map((item) => (
+              <span className="sp-object-tag" key={item}>
+                {item}
+              </span>
+            ))}
           </div>
         </section>
 
@@ -119,23 +123,7 @@ const FireAlarmPage = () => {
 
         <section className="sp-section">
           <Heading mode="dark" as="h2">
-            Для каких объектов
-          </Heading>
-          <p className="sp-regulations__intro">
-            Мы работаем с объектами различного назначения:
-          </p>
-          <div className="sp-objects">
-            {objectTypes.map((item) => (
-              <span className="sp-object-tag" key={item}>
-                {item}
-              </span>
-            ))}
-          </div>
-        </section>
-
-        <section className="sp-section">
-          <Heading mode="dark" as="h2">
-            Что получает заказчик по завершении проекта
+            Что получает заказчик
           </Heading>
           <div className="sp-deliverables">
             {deliverables.map((item) => (
@@ -155,8 +143,7 @@ const FireAlarmPage = () => {
             Используемое оборудование
           </Heading>
           <p className="sp-regulations__intro">
-            Подбираем сертифицированное оборудование исходя из требований проекта, особенностей
-            объекта и бюджета заказчика. Работаем с ведущими производителями:
+            Мы применяем оборудование ведущих производителей систем видеонаблюдения.
           </p>
           <div className="sp-equipment">
             {equipmentBrands.map((brand) => (
@@ -190,9 +177,8 @@ const FireAlarmPage = () => {
             Нормативные документы
           </Heading>
           <p className="sp-regulations__intro">
-            При проектировании и монтаже систем пожарной безопасности мы руководствуемся
-            действующим законодательством Российской Федерации и актуальными нормативными
-            документами.
+            Проектирование и монтаж систем видеонаблюдения выполняются с учётом действующих
+            нормативных требований Российской Федерации.
           </p>
           <div className="sp-regulations">
             {regulations.map((group) => (
@@ -237,18 +223,18 @@ const FireAlarmPage = () => {
         </section>
 
         <ConsultationBlock
-          eyebrow="Обеспечим надёжную противопожарную защиту вашего объекта"
-          heading="Получите консультацию инженера"
+          eyebrow="Современные системы видеонаблюдения для надёжной защиты вашего объекта"
+          heading="Получите консультацию специалиста"
           buttonText="Связаться с нами"
         >
-          Мы разработаем оптимальное техническое решение с учётом особенностей вашего объекта,
-          выполним профессиональный монтаж оборудования, проведём пусконаладочные работы и
-          обеспечим дальнейшее техническое сопровождение системы. Свяжитесь с нами, чтобы
-          получить консультацию инженера и рассчитать стоимость работ.
+          Разработаем эффективную систему видеоконтроля, выполним профессиональный монтаж
+          оборудования, настроим удалённый доступ и обеспечим дальнейшее техническое
+          сопровождение. Свяжитесь с нашими специалистами, чтобы получить консультацию и подобрать
+          оптимальное решение для вашего объекта.
         </ConsultationBlock>
       </div>
     </main>
   );
 };
 
-export default FireAlarmPage;
+export default VideoSurveillancePage;

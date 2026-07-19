@@ -1,7 +1,6 @@
 @use "@/styles/_vars" as *;
 
 .about {
-  --accent: #ff5a00;
   --glass: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02));
   background: #0b0b0b;
   padding: clamp(120px, 12vw, 180px) 24px 120px;

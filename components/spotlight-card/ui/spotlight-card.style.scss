@@ -1,0 +1,53 @@
+.spotlight {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+          transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+          border-color 0.35s ease,
+          box-shadow 0.35s ease;
+
+  &__glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 0;
+    transition: opacity 0.35s ease;
+    background: radial-gradient(
+                    420px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                    color-mix(in srgb, var(--accent) 16%, transparent),
+                    rgba(255,255,255,.04) 22%,
+                    transparent 52%
+    );
+  }
+
+  &__content {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    display: inherit;
+    flex-direction: inherit;
+    gap: inherit;
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--accent) 28%, transparent) !important;
+    box-shadow:
+            0 20px 50px rgba(0, 0, 0, 0.35),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+
+    .spotlight__glow {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: border-color 0.35s ease;
+
+    &:hover {
+      transform: none;
+    }
+  }
+}
