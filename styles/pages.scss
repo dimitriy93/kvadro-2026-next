@@ -6,7 +6,6 @@
   --border: 1px solid rgba(255, 255, 255, 0.08);
   --text-muted: rgba(255, 255, 255, 0.62);
   --section-gap: clamp(80px, 10vw, 120px);
-
   position: relative;
   overflow: hidden;
   padding: clamp(120px, 12vw, 180px) clamp(24px, 5vw, 80px) 120px;
@@ -15,11 +14,25 @@
   &--fire {
     --accent: #ff5a00;
   }
+
   &--security {
     --accent: #3b82f6;
   }
+
   &--video {
     --accent: #10b981;
+  }
+
+  &--access {
+    --accent: #6B5FB5;
+  }
+
+  &--low-current {
+    --accent: #06B6D4;
+  }
+
+  &--fire-design {
+    --accent: #f59e0b;
   }
 
   .container {
@@ -550,6 +563,10 @@
   background: rgba(255, 255, 255, 0.03);
   transition: border-color 0.25s;
 
+  span {
+    font-family: inter, serif;
+  }
+
   &.active {
     border-color: color-mix(in srgb, var(--accent) 25%, transparent);
 
@@ -643,19 +660,15 @@
   .sp-advantages {
     grid-template-columns: repeat(2, 1fr);
   }
-
   .sp-equipment {
     grid-template-columns: repeat(2, 1fr);
   }
-
   .sp-regulations {
     grid-template-columns: 1fr;
   }
-
   .sp-workflow {
     grid-template-columns: repeat(2, 1fr);
   }
-
   .sp-deliverables {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -669,12 +682,136 @@
   .sp-why {
     grid-template-columns: 1fr;
   }
-
   .sp-advantages {
     grid-template-columns: 1fr;
   }
-
   .sp-equipment {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .sp {
+    padding: clamp(105px, 14vw, 120px) 20px 72px;
+  }
+  .sp .container {
+    gap: 72px;
+  }
+  .sp-section {
+    gap: 28px;
+  }
+  .sp-hero__image {
+    height: 340px;
+  }
+  .sp-work,
+  .sp-step,
+  .sp-deliverable,
+  .sp-brand,
+  .sp-regulation {
+    padding: 24px;
+  }
+  .sp-regulations {
+    gap: 20px;
+  }
+  .sp-why {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sp {
+    padding: 105px 16px 56px;
+  }
+  .sp .container {
+    gap: 56px;
+  }
+  .sp__glow {
+    width: 320px;
+    height: 320px;
+    filter: blur(120px);
+  }
+  .sp-hero {
+    gap: 28px;
+  }
+  .sp-hero__content {
+    gap: 20px;
+  }
+  .sp-hero__lead {
+    line-height: 1.65;
+  }
+  .sp-hero__actions {
+    flex-direction: column;
+    align-items: stretch;
+
+    > * {
+      width: 100%;
+    }
+  }
+  .sp-hero__badge {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    text-align: center;
+  }
+  .sp-work,
+  .sp-step,
+  .sp-deliverable,
+  .sp-brand,
+  .sp-regulation,
+  .sp-advantage {
+    padding: 20px;
+  }
+  .sp-work__head {
+    gap: 14px;
+  }
+  .sp-work h3 {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .sp-object-tag {
+    width: 100%;
+    text-align: center;
+  }
+  .sp-faq__item button {
+    padding: 18px 20px;
+    gap: 12px;
+  }
+  .sp-faq__answer p {
+    padding: 0 20px 20px;
+  }
+}
+
+@media (max-width: 360px) {
+  .sp {
+    padding: 105px 12px 48px;
+  }
+  .sp .container {
+    gap: 48px;
+  }
+  .sp-work,
+  .sp-step,
+  .sp-deliverable,
+  .sp-brand,
+  .sp-regulation,
+  .sp-advantage {
+    padding: 16px;
+  }
+  .sp-work__head {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .sp-work__icon {
+    width: 40px;
+    height: 40px;
+  }
+  .sp-faq__item button {
+    padding: 16px;
+  }
+  .sp-faq__answer p {
+    padding: 0 16px 16px;
+  }
+  .sp-work__head {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

@@ -69,3 +69,9 @@
     align-items: flex-start;
   }
 }
+
+@media (max-width: 360px) {
+  .consultation-block__button {
+    text-align: center;
+  }
+}

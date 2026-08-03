@@ -9,17 +9,31 @@ import brandHiWatch from './brand-hiwatch.svg';
 import brandTrassir from './brand-trassir.svg';
 import brandRvi from './brand-rvi.svg';
 import brandBeward from './brand-beward.svg';
+import brandIronLogic from './brand-ironlogic.svg';
+import brandRusGuard from './brand-rusguard.svg';
+import brandSigur from './brand-sigur.svg';
+import brandLegrand from './brand-legrand.svg';
+import brandDKC from './brand-dkc.svg';
+import brandHyperline from './brand-hyperline.svg';
+import brandSystemSensor from './brand-system-sensor.svg';
 
 export {
-  brandRubezh,
-  brandBolid,
-  brandArgus,
-  brandSiemens,
-  brandParsec,
-  brandHikvision,
-  brandDahua,
-  brandHiWatch,
-  brandTrassir,
-  brandRvi,
-  brandBeward,
+    brandRubezh,
+    brandBolid,
+    brandArgus,
+    brandSiemens,
+    brandParsec,
+    brandHikvision,
+    brandDahua,
+    brandHiWatch,
+    brandTrassir,
+    brandRvi,
+    brandBeward,
+    brandIronLogic,
+    brandRusGuard,
+    brandSigur,
+    brandLegrand,
+    brandDKC,
+    brandHyperline,
+    brandSystemSensor,
 };
