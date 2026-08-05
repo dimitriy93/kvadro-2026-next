@@ -1,82 +1,180 @@
 'use client';
-import { FormEvent, useState } from 'react';
-import { services } from '@/config/routes/services.routes';
+import {ChangeEvent, FormEvent, useState} from 'react';
+import {usePathname} from 'next/navigation';
+import {services} from '@/config/routes/services.routes';
 
 interface IConsultationFormProps {
-  onSuccess?: () => void;
+    onSuccess?: () => void;
 }
 
-export const ConsultationForm = ({ onSuccess }: IConsultationFormProps) => {
-  const [loading, setLoading] = useState(false);
-  const [service, setService] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
+export const ConsultationForm = ({onSuccess}: IConsultationFormProps) => {
+    const pathname = usePathname();
+    const [loading, setLoading] = useState(false);
+    const [service, setService] = useState('');
+    const [isOpen, setIsOpen] = useState(false);
+    const [error, setError] = useState('');
+    const [phone, setPhone] = useState('');
 
-  const servicesTitles: string[] = [
-    ...Object.values(services).map((service) => service.title),
-    'Другое',
-  ];
+    const formatPhoneInput = (raw: string): string => {
+        let digits = raw.replace(/\D/g, '');
 
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+        if (digits.startsWith('8') || digits.startsWith('7')) {
+            digits = digits.slice(1);
+        }
 
-    setTimeout(() => {
-      setLoading(false);
-    }, 800);
-  };
+        digits = digits.slice(0, 10);
 
-  return (
-    <form className="consultation-form" onSubmit={submit}>
-      <label>
-        <span>Имя *</span>
-        <input required placeholder="Ваше имя" />
-      </label>
+        if (digits.length === 0) return '';
 
-      <label>
-        <span>Телефон *</span>
-        <input required type="tel" placeholder="+7 (___) ___-__-__" />
-      </label>
+        const parts: string[] = ['+7 (', digits.slice(0, 3)];
 
-      <label>
-        <span>Направление</span>
+        if (digits.length >= 3) {
+            parts.push(') ', digits.slice(3, 6));
+        }
+        if (digits.length >= 6) {
+            parts.push('-', digits.slice(6, 8));
+        }
+        if (digits.length >= 8) {
+            parts.push('-', digits.slice(8, 10));
+        }
 
-        <div className="service-select">
-          <button
-            type="button"
-            className="service-select__button"
-            onClick={() => setIsOpen((prev) => !prev)}
-          >
-            <span>{service || 'Выберите услугу'}</span>
-            <i className={isOpen ? 'active' : ''} />
-          </button>
+        return parts.join('');
+    };
 
-          {isOpen && (
-            <ul className="service-select__list">
-              {servicesTitles.map((service) => (
-                <li
-                  key={service}
-                  onClick={() => {
-                    setService(service);
-                  }}
-                >
-                  {service}
-                </li>
-              ))}
-            </ul>
-          )}
+    const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>): void => {
+        setPhone(formatPhoneInput(e.target.value));
+    };
 
-          <input type="hidden" name="service" value={service} />
-        </div>
-      </label>
+    const servicesTitles: string[] = [
+        ...Object.values(services).map((service) => service.title),
+        'Другое',
+    ];
 
-      <label>
-        <span>Сообщение</span>
-        <textarea placeholder="Расскажите об объекте" />
-      </label>
+    const submit = async (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
 
-      <button disabled={loading}>{loading ? 'Отправляем...' : 'Отправить заявку'}</button>
+        setLoading(true);
+        setError('');
 
-      <small>Нажимая кнопку, вы соглашаетесь с обработкой персональных данных</small>
-    </form>
-  );
+        const form = e.currentTarget;
+        const formData = new FormData(form);
+
+        const name = String(formData.get('name') ?? '').trim();
+        const phone = String(formData.get('phone') ?? '').trim();
+        const direction = String(formData.get('service') ?? '').trim();
+        const message = String(formData.get('message') ?? '').trim();
+
+        try {
+            const response = await fetch('/api/telegram', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name,
+                    phone,
+                    direction,
+                    message,
+                    pathname,
+                }),
+            });
+
+            let result: { success?: boolean; error?: string } | null = null;
+
+            try {
+                result = await response.json();
+            } catch {
+            }
+
+            if (!response.ok || !result?.success) {
+                throw new Error(result?.error ?? 'Ошибка отправки заявки');
+            }
+
+            form.reset();
+            setPhone('');
+            setService('');
+            setIsOpen(false);
+            setError('');
+
+            try {
+                onSuccess?.();
+            } catch (onSuccessErr) {
+                console.error('Ошибка onSuccess:', onSuccessErr);
+            }
+        } catch (err) {
+            console.error('Ошибка отправки заявки:', err);
+
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError('Не удалось отправить заявку.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <form className="consultation-form" onSubmit={submit}>
+            <label>
+                <span>Имя *</span>
+                <input required name="name" placeholder="Ваше имя"/>
+            </label>
+
+            <label>
+                <span>Телефон *</span>
+                <input
+                    required
+                    type="tel"
+                    name="phone"
+                    placeholder="+7 (___) ___-__-__"
+                    value={phone}
+                    onChange={handlePhoneChange}
+                />
+            </label>
+
+            <label>
+                <span>Направление</span>
+
+                <div className="service-select">
+                    <button
+                        type="button"
+                        className="service-select__button"
+                        onClick={() => setIsOpen((prev) => !prev)}
+                    >
+                        <span>{service || 'Выберите услугу'}</span>
+                        <i className={isOpen ? 'active' : ''}/>
+                    </button>
+
+                    {isOpen && (
+                        <ul className="service-select__list">
+                            {servicesTitles.map((service) => (
+                                <li
+                                    key={service}
+                                    onClick={() => {
+                                        setService(service);
+                                    }}
+                                >
+                                    {service}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+
+                    <input type="hidden" name="service" value={service}/>
+                </div>
+            </label>
+
+            <label>
+                <span>Сообщение</span>
+                <textarea name="message" placeholder="Расскажите об объекте"/>
+            </label>
+
+            <button disabled={loading}>{loading ? 'Отправляем...' : 'Отправить заявку'}</button>
+
+            <small>Нажимая кнопку, вы соглашаетесь с обработкой персональных данных</small>
+
+            {error && <div className="consultation-form__error">{error}</div>}
+        </form>
+    );
 };
