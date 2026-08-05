@@ -3,9 +3,10 @@
 import Image from 'next/image';
 import {documentsImg} from '@/app/_assets/images/documents';
 import {ConsultationBlock} from '@/components/consultation-block';
-import {Heading} from '@/components/heading';
-import {IconDocument} from "@/components/service-icons";
 import {SpotlightCard} from '@/components/spotlight-card';
+import {IconDocument} from "@/components/service-icons";
+import {Breadcrumbs} from "@/components/breadcrumbs";
+import {Heading} from '@/components/heading';
 import './documents.styles.scss';
 
 const DocumentsPage = () => (
@@ -15,6 +16,7 @@ const DocumentsPage = () => (
         <div className="documents__glow documents__glow--right"/>
 
         <div className="container">
+            <Breadcrumbs/>
             <section className="documents-hero">
                 <div className="documents-hero__content">
                     <Heading eyebrow='ООО "КВАДРО-АРСЕНАЛ"' mode="dark" as="h1">

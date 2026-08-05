@@ -1,5 +1,6 @@
 'use client';
 
+import {Breadcrumbs} from "@/components/breadcrumbs";
 import Image from 'next/image';
 import {useState} from 'react';
 import {useConsultation} from '@/providers/consultation-provider';
@@ -32,6 +33,7 @@ const VideoSurveillancePage = () => {
             <div className="sp__glow sp__glow--right"/>
 
             <div className="container">
+                <Breadcrumbs/>
                 <section className="sp-hero">
                     <div className="sp-hero__content">
                         <Heading eyebrow="Видеонаблюдение" mode="dark" as="h1">
