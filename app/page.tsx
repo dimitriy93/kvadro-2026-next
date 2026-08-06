@@ -23,7 +23,7 @@ function Page() {
       <Footer />
 
       <Popup isOpen={isQuizOpen} onClose={() => setQuizOpen(false)}>
-        <Quiz />
+        <Quiz onClose={() => setQuizOpen(false)} />
       </Popup>
     </>
   );

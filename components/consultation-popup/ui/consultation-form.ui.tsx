@@ -1,7 +1,8 @@
 'use client';
-import {ChangeEvent, FormEvent, useState} from 'react';
+import {FormEvent, useState} from 'react';
 import {usePathname} from 'next/navigation';
 import {services} from '@/config/routes/services.routes';
+import {createPhoneChangeHandler} from '@/lib/phone-mask';
 
 interface IConsultationFormProps {
     onSuccess?: () => void;
@@ -15,35 +16,7 @@ export const ConsultationForm = ({onSuccess}: IConsultationFormProps) => {
     const [error, setError] = useState('');
     const [phone, setPhone] = useState('');
 
-    const formatPhoneInput = (raw: string): string => {
-        let digits = raw.replace(/\D/g, '');
-
-        if (digits.startsWith('8') || digits.startsWith('7')) {
-            digits = digits.slice(1);
-        }
-
-        digits = digits.slice(0, 10);
-
-        if (digits.length === 0) return '';
-
-        const parts: string[] = ['+7 (', digits.slice(0, 3)];
-
-        if (digits.length >= 3) {
-            parts.push(') ', digits.slice(3, 6));
-        }
-        if (digits.length >= 6) {
-            parts.push('-', digits.slice(6, 8));
-        }
-        if (digits.length >= 8) {
-            parts.push('-', digits.slice(8, 10));
-        }
-
-        return parts.join('');
-    };
-
-    const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>): void => {
-        setPhone(formatPhoneInput(e.target.value));
-    };
+    const phoneChangeHandler = createPhoneChangeHandler(setPhone);
 
     const servicesTitles: string[] = [
         ...Object.values(services).map((service) => service.title),
@@ -129,7 +102,7 @@ export const ConsultationForm = ({onSuccess}: IConsultationFormProps) => {
                     name="phone"
                     placeholder="+7 (___) ___-__-__"
                     value={phone}
-                    onChange={handlePhoneChange}
+                    onChange={phoneChangeHandler}
                 />
             </label>
 

@@ -2,6 +2,7 @@ import {TelegramLead} from '@/types/telegram';
 import {
     formatTelegramField,
     telegramMessageTemplate,
+    telegramQuizMessageTemplate,
 } from '@/config/telegram.config';
 
 const escapeHtml = (value: string): string =>
@@ -36,14 +37,7 @@ const formatDatetime = (date: Date): string => {
     return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()} • ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
-export const sendTelegramLead = async (data: TelegramLead): Promise<void> => {
-    const token = process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = process.env.TELEGRAM_CHAT_ID;
-
-    if (!token || !chatId) {
-        throw new Error('Не заданы TELEGRAM_BOT_TOKEN или TELEGRAM_CHAT_ID');
-    }
-
+const buildConsultationMessage = (data: TelegramLead): string => {
     const message = data.message?.trim() ? data.message.trim() : telegramMessageTemplate.fallbacks.message;
     const direction = data.direction?.trim() ? data.direction.trim() : telegramMessageTemplate.fallbacks.direction;
     const phone = formatPhone(data.phone);
@@ -55,7 +49,7 @@ export const sendTelegramLead = async (data: TelegramLead): Promise<void> => {
     const quote = (text: string) => `<blockquote>${escapeHtml(text)}</blockquote>`;
     const bold = (text: string) => `<b>${escapeHtml(text)}</b>`;
 
-    const text = [
+    return [
         telegramMessageTemplate.title,
         '',
         formatTelegramField(labels.name, bold(data.name)),
@@ -70,6 +64,64 @@ export const sendTelegramLead = async (data: TelegramLead): Promise<void> => {
         formatTelegramField(labels.page, escapeHtml(pathname)),
         formatTelegramField(labels.date, escapeHtml(datetime)),
     ].join('\n');
+};
+
+const buildQuizMessage = (data: TelegramLead): string => {
+    const phone = formatPhone(data.phone);
+    const datetime = formatDatetime(new Date());
+
+    const {labels, questions} = telegramQuizMessageTemplate;
+    const answers = data.quizAnswers;
+
+    const lines: string[] = [
+        telegramQuizMessageTemplate.title,
+        '',
+        formatTelegramField(labels.name, escapeHtml(data.name)),
+        formatTelegramField(labels.phone, escapeHtml(phone)),
+    ];
+
+    const appendSection = (question: string, answer: string): void => {
+        lines.push(
+            '',
+            `${labels.questionPrefix} <b>${escapeHtml(question)}</b>`,
+            '',
+            `${labels.answerPrefix} ${answer}`,
+        );
+    };
+
+    if (answers?.objectType) {
+        appendSection(questions.object, escapeHtml(answers.objectType));
+    }
+
+    if (answers?.area) {
+        appendSection(questions.area, escapeHtml(answers.area));
+    }
+
+    if (answers?.systems?.length) {
+        const systemsText = answers.systems.map(escapeHtml).join(', ');
+        appendSection(questions.systems, systemsText);
+    }
+
+    lines.push(
+        '',
+        telegramQuizMessageTemplate.separator,
+        formatTelegramField(labels.source, telegramQuizMessageTemplate.source),
+        labels.page,
+        formatTelegramField(labels.date, escapeHtml(datetime)),
+    );
+
+    return lines.join('\n');
+};
+
+export type TelegramMessageType = 'consultation' | 'quiz';
+
+const sendTelegramText = async (text: string): Promise<void> => {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+
+    if (!token || !chatId) {
+        throw new Error('Не заданы TELEGRAM_BOT_TOKEN или TELEGRAM_CHAT_ID');
+    }
 
     const response = await fetch(
         `https://api.telegram.org/bot${token}/sendMessage`,
@@ -87,4 +139,13 @@ export const sendTelegramLead = async (data: TelegramLead): Promise<void> => {
     if (!response.ok) {
         throw new Error(`Telegram API error: ${response.status}`);
     }
+};
+
+export const sendTelegramLead = async (
+    data: TelegramLead,
+    type: TelegramMessageType = 'consultation'
+): Promise<void> => {
+    const text = type === 'quiz' ? buildQuizMessage(data) : buildConsultationMessage(data);
+
+    await sendTelegramText(text);
 };

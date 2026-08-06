@@ -1,24 +1,42 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { calculatePrice } from '../lib/calculate-price';
 import { QuizAnswers } from '@/widgets/quiz/quiz.types';
+import { createPhoneChangeHandler } from '@/lib/phone-mask';
 import './quiz.styles.scss';
 
 const QUIZ_STEPS = ['object', 'area', 'systems', 'contact', 'result'] as const;
 
-export const Quiz = () => {
+export const Quiz = ({ onClose }: { onClose?: () => void }) => {
+  const pathname = usePathname();
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [answers, setAnswers] = useState<QuizAnswers>({
     systems: [],
   });
   const [systemsError, setSystemsError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const [errors, setErrors] = useState<{
     name?: string;
     phone?: string;
   }>({});
+
+  useEffect(() => {
+    if (!submitted || !onClose) return;
+
+    const timer = window.setTimeout(() => {
+      onClose();
+    }, 5000);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [submitted, onClose]);
 
   const next = () => {
     setDirection(1);
@@ -48,7 +66,7 @@ export const Quiz = () => {
     return calculatePrice(answers.area, answers.systems);
   }, [answers.area, answers.systems]);
 
-  const handleLeadWithContact = () => {
+  const handleLeadWithContact = async () => {
     const newErrors: typeof errors = {};
 
     if (!answers.phone?.trim()) {
@@ -79,8 +97,54 @@ export const Quiz = () => {
     };
 
     console.log('LEAD:', lead);
-    next();
+
+    setSending(true);
+    setSubmitError('');
+
+    try {
+      const response = await fetch('/api/telegram', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: answers.name,
+          phone: answers.phone,
+          direction: 'Предварительный расчёт',
+          pathname,
+          type: 'quiz',
+          quizAnswers: {
+            objectType: answers.objectType,
+            area: answers.area,
+            systems: answers.systems || [],
+          },
+        }),
+      });
+
+      let result: { success?: boolean } | null = null;
+
+      try {
+        result = await response.json();
+      } catch {
+        // ignore
+      }
+
+      if (!response.ok || !result?.success) {
+        throw new Error('Ошибка отправки заявки');
+      }
+
+      setSubmitted(true);
+    } catch (err) {
+      console.error('Ошибка отправки заявки:', err);
+      setSubmitError('Не удалось отправить заявку. Попробуйте ещё раз.');
+    } finally {
+      setSending(false);
+    }
   };
+
+  const handlePhoneChange = createPhoneChangeHandler((value) =>
+    setAnswers((prev) => ({ ...prev, phone: value }))
+  );
 
   const handleLeadAnonymous = () => {
     const lead = {
@@ -220,15 +284,29 @@ export const Quiz = () => {
 
             {step === 3 && (
               <div className="quiz-step">
-                <h2 className="quiz__title">Получите предварительный расчёт</h2>
+                {!submitted && (
+                  <>
+                    <h2 className="quiz__title">Получите предварительный расчёт</h2>
 
-                <p className="quiz__subtitle">
-                  Предварительный расчёт формируется автоматически.
-                  <br />
-                  Оставьте контакты — при необходимости уточним детали и подготовим точную смету.
-                </p>
+                    <p className="quiz__subtitle">
+                      Предварительный расчёт формируется автоматически.
+                      <br />
+                      Оставьте контакты — при необходимости уточним детали и подготовим точную смету.
+                    </p>
+                  </>
+                )}
 
-                <div className="quiz__form">
+                {submitted ? (
+                  <div className="quiz-success">
+                    <div className="quiz-success__icon">✓</div>
+                    <h3 className="quiz-success__title">Спасибо!</h3>
+                    <p className="quiz-success__text">
+                      Мы с Вами свяжемся<br />
+                      для уточнения деталей.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="quiz__form">
                   <label htmlFor="quiz_name">
                     <input
                       placeholder="Имя"
@@ -242,36 +320,44 @@ export const Quiz = () => {
 
                   <label htmlFor="quiz_phone">
                     <input
-                      placeholder="Телефон"
+                      type="tel"
+                      placeholder="+7 (___) ___-__-__"
                       id="quiz_phone"
                       name="quiz_phone"
                       value={answers.phone || ''}
-                      onChange={(e) => setAnswers({ ...answers, phone: e.target.value })}
+                      onChange={handlePhoneChange}
                     />
                     {errors.phone && <div className="quiz__error">{errors.phone}</div>}
                   </label>
 
                   <div className="quiz__actions">
-                    <button className="quiz__primary" onClick={handleLeadWithContact}>
-                      Получить предварительный расчёт
+                    <button className="quiz__primary" onClick={handleLeadWithContact} disabled={sending}>
+                      {sending ? 'Отправляем...' : 'Получить предварительный расчёт'}
                     </button>
 
                     <button className="quiz__secondary" onClick={handleLeadAnonymous}>
                       Смотреть расчёт без контактов
                     </button>
                   </div>
-                </div>
 
-                <p className="quiz__hint">
-                  Без спама и навязчивых звонков — только расчёт и при необходимости уточнение
-                  деталей
-                </p>
-
-                <div className="quiz__actions">
-                  <button onClick={prev} className="quiz__back">
-                    Назад
-                  </button>
+                  {submitError && <div className="quiz__error">{submitError}</div>}
                 </div>
+                )}
+
+                {!submitted && (
+                  <>
+                    <p className="quiz__hint">
+                      Без спама и навязчивых звонков — только расчёт и при необходимости уточнение
+                      деталей
+                    </p>
+
+                    <div className="quiz__actions">
+                      <button onClick={prev} className="quiz__back">
+                        Назад
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

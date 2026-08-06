@@ -1,6 +1,6 @@
 export const telegramMessageTemplate = {
-    title: '🔔 <b>Новая заявка с сайта</b>',
-    separator: '━━━━━━━━━━━━━━━━━━━━',
+    title: '🔔 <b>Заявка с сайта</b>',
+    separator: '━━━━━━━━━━',
     source: 'квадро-арсенал.рф',
     labels: {
         clientSection: '👤 Клиент',
@@ -25,3 +25,27 @@ export const boldTelegramLabel = (label: string): string => `<b>${label}</b>`;
 /** Формирует строку поля: подпись (жирным) + перенос строки + значение. */
 export const formatTelegramField = (label: string, value: string): string =>
     `${boldTelegramLabel(label)} | ${value}`;
+
+/** Шаблон сообщения для заявок из квиза (расчёт). */
+export const telegramQuizMessageTemplate = {
+    title: '🔔 <b>Заявка с сайта на расчет</b>',
+    separator: '━━━━━━━━━━',
+    source: 'квадро-арсенал.рф',
+    labels: {
+        name: '📝 Имя',
+        phone: '📞 Телефон',
+        source: '🌐 Источник',
+        page: '📄 Расчет с сайта',
+        date: '📅 Дата',
+        questionPrefix: '❓',
+        answerPrefix: '💬',
+    },
+    questions: {
+        object: 'Какой у вас объект?',
+        area: 'Площадь объекта',
+        systems: 'Какие системы нужны?',
+    },
+    fallbacks: {
+        pathname: '/',
+    },
+} as const;
