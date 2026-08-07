@@ -1,386 +1,388 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
-import { calculatePrice } from '../lib/calculate-price';
-import { QuizAnswers } from '@/widgets/quiz/quiz.types';
-import { createPhoneChangeHandler } from '@/lib/phone-mask';
-import { Turnstile, Honeypot } from '@/components/turnstile';
+import {useEffect, useMemo, useState} from 'react';
+import {usePathname} from 'next/navigation';
+import {AnimatePresence, motion} from 'framer-motion';
+import {calculatePrice} from '../lib/calculate-price';
+import {QuizAnswers} from '@/widgets/quiz/quiz.types';
+import {createPhoneChangeHandler} from '@/lib/phone-mask';
+import {Turnstile, Honeypot} from '@/components/turnstile';
 import './quiz.styles.scss';
 
 const QUIZ_STEPS = ['object', 'area', 'systems', 'contact', 'result'] as const;
 
-export const Quiz = ({ onClose }: { onClose?: () => void }) => {
-  const pathname = usePathname();
-  const [step, setStep] = useState(0);
-  const [direction, setDirection] = useState<1 | -1>(1);
-  const [answers, setAnswers] = useState<QuizAnswers>({
-    systems: [],
-  });
-  const [systemsError, setSystemsError] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [submitError, setSubmitError] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [website, setWebsite] = useState('');
-
-  const [errors, setErrors] = useState<{
-    name?: string;
-    phone?: string;
-  }>({});
-
-  useEffect(() => {
-    if (!submitted || !onClose) return;
-
-    const timer = window.setTimeout(() => {
-      onClose();
-    }, 5000);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [submitted, onClose]);
-
-  const next = () => {
-    setDirection(1);
-    setStep((prev) => Math.min(prev + 1, 4));
-  };
-
-  const prev = () => {
-    setDirection(-1);
-    setStep((prev) => Math.max(prev - 1, 0));
-  };
-
-  const toggleSystem = (value: string) => {
-    setSystemsError('');
-
-    setAnswers((prev) => {
-      const current = prev.systems || [];
-      const exists = current.includes(value);
-
-      return {
-        ...prev,
-        systems: exists ? current.filter((s) => s !== value) : [...current, value],
-      };
+export const Quiz = ({onClose}: { onClose?: () => void }) => {
+    const pathname = usePathname();
+    const [step, setStep] = useState(0);
+    const [direction, setDirection] = useState<1 | -1>(1);
+    const [answers, setAnswers] = useState<QuizAnswers>({
+        systems: [],
     });
-  };
+    const [systemsError, setSystemsError] = useState('');
+    const [submitted, setSubmitted] = useState(false);
+    const [sending, setSending] = useState(false);
+    const [submitError, setSubmitError] = useState('');
+    const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+    const [website, setWebsite] = useState('');
 
-  const price = useMemo(() => {
-    return calculatePrice(answers.area, answers.systems);
-  }, [answers.area, answers.systems]);
+    const [errors, setErrors] = useState<{
+        name?: string;
+        phone?: string;
+    }>({});
 
-  const handleLeadWithContact = async () => {
-    const newErrors: typeof errors = {};
+    useEffect(() => {
+        if (!submitted || !onClose) return;
 
-    if (!answers.phone?.trim()) {
-      newErrors.phone = 'Укажите телефон или выберите просмотр без контактов';
-    }
+        const timer = window.setTimeout(() => {
+            onClose();
+        }, 5000);
 
-    if (!answers.name?.trim()) {
-      newErrors.name = 'Укажите имя или выберите просмотр без контактов';
-    }
+        return () => {
+            window.clearTimeout(timer);
+        };
+    }, [submitted, onClose]);
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    const lead = {
-      id: crypto.randomUUID(),
-      answers,
-      contact: {
-        name: answers.name,
-        phone: answers.phone,
-      },
-      meta: {
-        completedAt: Date.now(),
-        hasContact: true,
-        source: 'quiz_popup',
-      },
+    const next = () => {
+        setDirection(1);
+        setStep((prev) => Math.min(prev + 1, 4));
     };
 
-    setSending(true);
-    setSubmitError('');
-
-    try {
-      const response = await fetch('/api/telegram', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: answers.name,
-          phone: answers.phone,
-          direction: 'Предварительный расчёт',
-          pathname,
-          type: 'quiz',
-          website,
-          turnstileToken,
-          quizAnswers: {
-            objectType: answers.objectType,
-            area: answers.area,
-            systems: answers.systems || [],
-          },
-        }),
-      });
-
-      let result: { success?: boolean } | null = null;
-
-      try {
-        result = await response.json();
-      } catch {
-        // ignore
-      }
-
-      if (!response.ok || !result?.success) {
-        throw new Error('Ошибка отправки заявки');
-      }
-
-      setSubmitted(true);
-    } catch (err) {
-      console.error('Ошибка отправки заявки:', err);
-      setSubmitError('Не удалось отправить заявку. Попробуйте ещё раз.');
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const handlePhoneChange = createPhoneChangeHandler((value) =>
-    setAnswers((prev) => ({ ...prev, phone: value }))
-  );
-
-  const handleLeadAnonymous = () => {
-    const lead = {
-      id: crypto.randomUUID(),
-      answers,
-      meta: {
-        completedAt: Date.now(),
-        hasContact: false,
-        source: 'quiz_popup',
-      },
+    const prev = () => {
+        setDirection(-1);
+        setStep((prev) => Math.max(prev - 1, 0));
     };
 
-    next();
-  };
+    const toggleSystem = (value: string) => {
+        setSystemsError('');
 
-  const handleSystemsNext = () => {
-    if (!answers.systems?.length) {
-      setSystemsError('Выберите один или несколько вариантов');
-      return;
-    }
+        setAnswers((prev) => {
+            const current = prev.systems || [];
+            const exists = current.includes(value);
 
-    next();
-  };
+            return {
+                ...prev,
+                systems: exists ? current.filter((s) => s !== value) : [...current, value],
+            };
+        });
+    };
 
-  return (
-    <div className="quiz">
-      <div className="quiz__progress">
-        {QUIZ_STEPS.slice(0, 4).map((_, i) => (
-          <div key={i} className={`quiz__progress-item ${i <= step ? 'is-active' : ''}`} />
-        ))}
-      </div>
+    const price = useMemo(() => {
+        return calculatePrice(answers.area, answers.systems);
+    }, [answers.area, answers.systems]);
 
-      <div className="quiz__body">
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={step}
-            className="quiz-step"
-            custom={direction}
-            initial={{
-              x: direction > 0 ? 80 : -80,
-              opacity: 0,
-            }}
-            animate={{
-              x: 0,
-              opacity: 1,
-            }}
-            exit={{
-              x: direction > 0 ? -80 : 80,
-              opacity: 0,
-            }}
-            transition={{
-              duration: 0.3,
-              ease: 'easeInOut',
-            }}
-          >
-            {step === 0 && (
-              <div className="quiz-step">
-                <h2 className="quiz__title">Какой у вас объект?</h2>
+    const handleLeadWithContact = async () => {
+        const newErrors: typeof errors = {};
 
-                <div className="quiz__grid">
-                  {['Офис', 'Магазин', 'Производство', 'Склад', 'Дом'].map((item) => (
-                    <button
-                      key={item}
-                      className="quiz__card"
-                      onClick={() => {
-                        setAnswers({ ...answers, objectType: item });
-                        next();
-                      }}
+        if (!answers.phone?.trim()) {
+            newErrors.phone = 'Укажите телефон или выберите просмотр без контактов';
+        }
+
+        if (!answers.name?.trim()) {
+            newErrors.name = 'Укажите имя или выберите просмотр без контактов';
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
+
+        const lead = {
+            id: crypto.randomUUID(),
+            answers,
+            contact: {
+                name: answers.name,
+                phone: answers.phone,
+            },
+            meta: {
+                completedAt: Date.now(),
+                hasContact: true,
+                source: 'quiz_popup',
+            },
+        };
+
+        setSending(true);
+        setSubmitError('');
+
+        try {
+            console.log('TURNSTILE BEFORE SEND:', turnstileToken);
+            const response = await fetch('/api/telegram', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: answers.name,
+                    phone: answers.phone,
+                    direction: 'Предварительный расчёт',
+                    pathname,
+                    type: 'quiz',
+                    website,
+                    turnstileToken,
+                    quizAnswers: {
+                        objectType: answers.objectType,
+                        area: answers.area,
+                        systems: answers.systems || [],
+                    },
+                }),
+            });
+
+            let result: { success?: boolean } | null = null;
+
+            try {
+                result = await response.json();
+            } catch {
+                // ignore
+            }
+
+            if (!response.ok || !result?.success) {
+                throw new Error('Ошибка отправки заявки');
+            }
+
+            setSubmitted(true);
+        } catch (err) {
+            console.error('Ошибка отправки заявки:', err);
+            setSubmitError('Не удалось отправить заявку. Попробуйте ещё раз.');
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const handlePhoneChange = createPhoneChangeHandler((value) =>
+        setAnswers((prev) => ({...prev, phone: value}))
+    );
+
+    const handleLeadAnonymous = () => {
+        const lead = {
+            id: crypto.randomUUID(),
+            answers,
+            meta: {
+                completedAt: Date.now(),
+                hasContact: false,
+                source: 'quiz_popup',
+            },
+        };
+
+        next();
+    };
+
+    const handleSystemsNext = () => {
+        if (!answers.systems?.length) {
+            setSystemsError('Выберите один или несколько вариантов');
+            return;
+        }
+
+        next();
+    };
+
+    return (
+        <div className="quiz">
+            <div className="quiz__progress">
+                {QUIZ_STEPS.slice(0, 4).map((_, i) => (
+                    <div key={i} className={`quiz__progress-item ${i <= step ? 'is-active' : ''}`}/>
+                ))}
+            </div>
+
+            <div className="quiz__body">
+                <AnimatePresence mode="wait" custom={direction}>
+                    <motion.div
+                        key={step}
+                        className="quiz-step"
+                        custom={direction}
+                        initial={{
+                            x: direction > 0 ? 80 : -80,
+                            opacity: 0,
+                        }}
+                        animate={{
+                            x: 0,
+                            opacity: 1,
+                        }}
+                        exit={{
+                            x: direction > 0 ? -80 : 80,
+                            opacity: 0,
+                        }}
+                        transition={{
+                            duration: 0.3,
+                            ease: 'easeInOut',
+                        }}
                     >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+                        {step === 0 && (
+                            <div className="quiz-step">
+                                <h2 className="quiz__title">Какой у вас объект?</h2>
 
-            {step === 1 && (
-              <div className="quiz-step">
-                <h2 className="quiz__title">Площадь объекта</h2>
+                                <div className="quiz__grid">
+                                    {['Офис', 'Магазин', 'Производство', 'Склад', 'Дом'].map((item) => (
+                                        <button
+                                            key={item}
+                                            className="quiz__card"
+                                            onClick={() => {
+                                                setAnswers({...answers, objectType: item});
+                                                next();
+                                            }}
+                                        >
+                                            {item}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
-                <div className="quiz__grid">
-                  {['до 100', '100–500', '500–1000', '1000+'].map((item) => (
-                    <button
-                      key={item}
-                      className="quiz__card"
-                      onClick={() => {
-                        setAnswers({ ...answers, area: item });
-                        next();
-                      }}
-                    >
-                      {item} м²
-                    </button>
-                  ))}
-                </div>
-                <div className="quiz__actions">
-                  <button onClick={prev} className="quiz__back">
-                    Назад
-                  </button>
-                </div>
-              </div>
-            )}
+                        {step === 1 && (
+                            <div className="quiz-step">
+                                <h2 className="quiz__title">Площадь объекта</h2>
 
-            {step === 2 && (
-              <div className="quiz-step">
-                <h2 className="quiz__title">Какие системы нужны?</h2>
-                <p className="quiz__subtitle">Выберите один или несколько вариантов</p>
+                                <div className="quiz__grid">
+                                    {['до 100', '100–500', '500–1000', '1000+'].map((item) => (
+                                        <button
+                                            key={item}
+                                            className="quiz__card"
+                                            onClick={() => {
+                                                setAnswers({...answers, area: item});
+                                                next();
+                                            }}
+                                        >
+                                            {item} м²
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="quiz__actions">
+                                    <button onClick={prev} className="quiz__back">
+                                        Назад
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
-                <div className="quiz__grid">
-                  {['Пожарная', 'Охранная', 'Видеонаблюдение', 'СКУД', 'Слаботочка'].map((item) => (
-                    <button
-                      key={item}
-                      className={`quiz__card ${answers.systems?.includes(item) ? 'is-active' : ''}`}
-                      onClick={() => toggleSystem(item)}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
+                        {step === 2 && (
+                            <div className="quiz-step">
+                                <h2 className="quiz__title">Какие системы нужны?</h2>
+                                <p className="quiz__subtitle">Выберите один или несколько вариантов</p>
 
-                {systemsError && <div className="quiz__error">{systemsError}</div>}
+                                <div className="quiz__grid">
+                                    {['Пожарная', 'Охранная', 'Видеонаблюдение', 'СКУД', 'Слаботочка'].map((item) => (
+                                        <button
+                                            key={item}
+                                            className={`quiz__card ${answers.systems?.includes(item) ? 'is-active' : ''}`}
+                                            onClick={() => toggleSystem(item)}
+                                        >
+                                            {item}
+                                        </button>
+                                    ))}
+                                </div>
 
-                <div className="quiz__actions">
-                  <button onClick={prev} className="quiz__back">
-                    Назад
-                  </button>
-                  <button
-                    className="quiz__next"
-                    onClick={handleSystemsNext}
-                    disabled={!answers.systems?.length}
-                  >
-                    Далее →
-                  </button>
-                </div>
-              </div>
-            )}
+                                {systemsError && <div className="quiz__error">{systemsError}</div>}
 
-            {step === 3 && (
-              <div className="quiz-step">
-                {!submitted && (
-                  <>
-                    <h2 className="quiz__title">Получите предварительный расчёт</h2>
+                                <div className="quiz__actions">
+                                    <button onClick={prev} className="quiz__back">
+                                        Назад
+                                    </button>
+                                    <button
+                                        className="quiz__next"
+                                        onClick={handleSystemsNext}
+                                        disabled={!answers.systems?.length}
+                                    >
+                                        Далее →
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
-                    <p className="quiz__subtitle">
-                      Предварительный расчёт формируется автоматически.
-                      <br />
-                      Оставьте контакты — при необходимости уточним детали и подготовим точную смету.
-                    </p>
-                  </>
-                )}
+                        {step === 3 && (
+                            <div className="quiz-step">
+                                {!submitted && (
+                                    <>
+                                        <h2 className="quiz__title">Получите предварительный расчёт</h2>
 
-                {submitted ? (
-                  <div className="quiz-success">
-                    <div className="quiz-success__icon">✓</div>
-                    <h3 className="quiz-success__title">Спасибо!</h3>
-                    <p className="quiz-success__text">
-                      Мы с Вами свяжемся<br />
-                      для уточнения деталей.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="quiz__form">
-                  <label htmlFor="quiz_name">
-                    <input
-                      placeholder="Имя"
-                      id="quiz_name"
-                      name="quiz_name"
-                      value={answers.name || ''}
-                      onChange={(e) => setAnswers({ ...answers, name: e.target.value })}
-                    />
-                    {errors.name && <div className="quiz__error">{errors.name}</div>}
-                  </label>
+                                        <p className="quiz__subtitle">
+                                            Предварительный расчёт формируется автоматически.
+                                            <br/>
+                                            Оставьте контакты — при необходимости уточним детали и подготовим точную
+                                            смету.
+                                        </p>
+                                    </>
+                                )}
 
-                  <label htmlFor="quiz_phone">
-                    <input
-                      type="tel"
-                      placeholder="+7 (___) ___-__-__"
-                      id="quiz_phone"
-                      name="quiz_phone"
-                      value={answers.phone || ''}
-                      onChange={handlePhoneChange}
-                    />
-                    {errors.phone && <div className="quiz__error">{errors.phone}</div>}
-                  </label>
+                                {submitted ? (
+                                    <div className="quiz-success">
+                                        <div className="quiz-success__icon">✓</div>
+                                        <h3 className="quiz-success__title">Спасибо!</h3>
+                                        <p className="quiz-success__text">
+                                            Мы с Вами свяжемся<br/>
+                                            для уточнения деталей.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="quiz__form">
+                                        <label htmlFor="quiz_name">
+                                            <input
+                                                placeholder="Имя"
+                                                id="quiz_name"
+                                                name="quiz_name"
+                                                value={answers.name || ''}
+                                                onChange={(e) => setAnswers({...answers, name: e.target.value})}
+                                            />
+                                            {errors.name && <div className="quiz__error">{errors.name}</div>}
+                                        </label>
 
-                  <Honeypot onChange={setWebsite} />
-                  <Turnstile onVerify={setTurnstileToken} />
+                                        <label htmlFor="quiz_phone">
+                                            <input
+                                                type="tel"
+                                                placeholder="+7 (___) ___-__-__"
+                                                id="quiz_phone"
+                                                name="quiz_phone"
+                                                value={answers.phone || ''}
+                                                onChange={handlePhoneChange}
+                                            />
+                                            {errors.phone && <div className="quiz__error">{errors.phone}</div>}
+                                        </label>
 
-                  <div className="quiz__actions">
-                    <button className="quiz__primary" onClick={handleLeadWithContact} disabled={sending}>
-                      {sending ? 'Отправляем...' : 'Получить предварительный расчёт'}
-                    </button>
+                                        <Honeypot onChange={setWebsite}/>
+                                        <Turnstile onVerify={setTurnstileToken}/>
+                                        <div className="quiz__actions">
+                                            <button className="quiz__primary" onClick={handleLeadWithContact}
+                                                    disabled={sending}>
+                                                {sending ? 'Отправляем...' : 'Получить предварительный расчёт'}
+                                            </button>
 
-                    <button className="quiz__secondary" onClick={handleLeadAnonymous}>
-                      Смотреть расчёт без контактов
-                    </button>
-                  </div>
+                                            <button className="quiz__secondary" onClick={handleLeadAnonymous}>
+                                                Смотреть расчёт без контактов
+                                            </button>
+                                        </div>
 
-                  {submitError && <div className="quiz__error">{submitError}</div>}
-                </div>
-                )}
+                                        {submitError && <div className="quiz__error">{submitError}</div>}
+                                    </div>
+                                )}
 
-                {!submitted && (
-                  <>
-                    <p className="quiz__hint">
-                      Без спама и навязчивых звонков — только расчёт и при необходимости уточнение
-                      деталей
-                    </p>
+                                {!submitted && (
+                                    <>
+                                        <p className="quiz__hint">
+                                            Без спама и навязчивых звонков — только расчёт и при необходимости уточнение
+                                            деталей
+                                        </p>
 
-                    <div className="quiz__actions">
-                      <button onClick={prev} className="quiz__back">
-                        Назад
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+                                        <div className="quiz__actions">
+                                            <button onClick={prev} className="quiz__back">
+                                                Назад
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
 
-            {step === 4 && (
-              <div className="quiz__result quiz-step">
-                <h2 className="quiz__title">Предварительная стоимость</h2>
+                        {step === 4 && (
+                            <div className="quiz__result quiz-step">
+                                <h2 className="quiz__title">Предварительная стоимость</h2>
 
-                <div className="quiz__price">
-                  от {price.min.toLocaleString()} ₽<br />
-                  до {price.max.toLocaleString()} ₽
-                </div>
+                                <div className="quiz__price">
+                                    от {price.min.toLocaleString()} ₽<br/>
+                                    до {price.max.toLocaleString()} ₽
+                                </div>
 
-                <p>Точная стоимость определяется после обследования объекта.</p>
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </div>
-    </div>
-  );
+                                <p>Точная стоимость определяется после обследования объекта.</p>
+                            </div>
+                        )}
+                    </motion.div>
+                </AnimatePresence>
+            </div>
+        </div>
+    );
 };

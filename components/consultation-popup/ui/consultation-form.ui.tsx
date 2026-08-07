@@ -41,6 +41,7 @@ export const ConsultationForm = ({onSuccess}: IConsultationFormProps) => {
         const website = String(formData.get('website') ?? '').trim();
 
         try {
+            console.log('TURNSTILE BEFORE SEND:', turnstileToken);
             const response = await fetch('/api/telegram', {
                 method: 'POST',
                 headers: {

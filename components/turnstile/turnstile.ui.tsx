@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import {useEffect, useRef} from 'react';
 import './turnstile.styles.scss';
 
 declare global {
@@ -33,6 +33,13 @@ interface TurnstileProps {
 
 const TURNSTILE_SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
 
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
+
+// Временный безопасный лог: наличие ключа без вывода самого значения.
+console.log('Turnstile site key exists:', Boolean(TURNSTILE_SITE_KEY));
+
+// Кэшируем Promise загрузки скрипта, чтобы не грузить его повторно при
+// открытии/закрытии попапов и переиспользовании в нескольких формах.
 let scriptPromise: Promise<boolean> | null = null;
 
 const loadTurnstileScript = (): Promise<boolean> => {
@@ -43,7 +50,6 @@ const loadTurnstileScript = (): Promise<boolean> => {
             `script[src^="${TURNSTILE_SCRIPT_URL}"]`
         );
         if (existing) {
-            // Скрипт уже присутствует в DOM — wait до готовности window.turnstile
             resolve(true);
             return;
         }
@@ -59,11 +65,8 @@ const loadTurnstileScript = (): Promise<boolean> => {
     return scriptPromise;
 };
 
-/**
- * Гарантирует, что window.turnstile доступен до вызова render,
- * с ограниченным числом попыток (скрипт уже мог быть загружен ранее).
- */
-const waitForTurnstile = (windowRef: Window, attempts = 20): Promise<boolean> => {
+/** Дожидается появления window.turnstile с ограниченным числом попыток. */
+const waitForTurnstile = (windowRef: Window, attempts = 200): Promise<boolean> => {
     return new Promise((resolve) => {
         const check = (left: number) => {
             if ((windowRef as Window & { turnstile?: unknown }).turnstile) {
@@ -84,18 +87,17 @@ const waitForTurnstile = (windowRef: Window, attempts = 20): Promise<boolean> =>
  * Клиентский компонент Cloudflare Turnstile.
  *
  * Загружает официальный скрипт Turnstile, рендерит виджет ровно один раз и
- * передаёт полученный токен через колбэк onVerify. Повторно используется
+ * передаёт полученный токен через колбэк onVerify. Используется повторно
  * в ConsultationForm и Quiz.
  */
-export const Turnstile = ({ onVerify, onError, onExpire }: TurnstileProps) => {
+export const Turnstile = ({onVerify, onError, onExpire}: TurnstileProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetIdRef = useRef<string | null>(null);
 
+    // Актуальные колбэки, чтобы не зависеть от замыканий при рендере.
     const onVerifyRef = useRef(onVerify);
     const onErrorRef = useRef(onError);
     const onExpireRef = useRef(onExpire);
-
-    const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
     useEffect(() => {
         onVerifyRef.current = onVerify;
@@ -103,6 +105,7 @@ export const Turnstile = ({ onVerify, onError, onExpire }: TurnstileProps) => {
         onExpireRef.current = onExpire;
     }, [onVerify, onError, onExpire]);
 
+    // Рендер виджета — побочный эффект, выполняется только внутри useEffect.
     useEffect(() => {
         let cancelled = false;
 
@@ -111,19 +114,26 @@ export const Turnstile = ({ onVerify, onError, onExpire }: TurnstileProps) => {
             if (!cancelled && container && !widgetIdRef.current) {
                 if (!window.turnstile) return;
 
-                // Сбрасываем любые предыдущие виджеты в контейнере во избежание двойного рендера
+                // Страховка от повторного рендера в контейнере.
                 container.replaceChildren();
 
                 widgetIdRef.current = window.turnstile.render(container, {
-                    sitekey: siteKey,
-                    callback: (token: string) => onVerifyRef.current(token),
+                    sitekey: TURNSTILE_SITE_KEY,
+                    callback: (token: string) => {
+                        console.log('TURNSTILE TOKEN:', token);
+                        onVerifyRef.current(token);
+                    },
                     'error-callback': () => onErrorRef.current?.(),
-                    'expired-callback': () => onExpireRef.current?.(),
+                    'expired-callback': () => {
+                        onVerifyRef.current(null);
+                        onExpireRef.current?.();
+                    },
                 });
             }
         };
 
-        if (!siteKey) {
+        if (!TURNSTILE_SITE_KEY) {
+            console.error('Turnstile site key is empty in production build.');
             onErrorRef.current?.();
             return;
         }
@@ -150,7 +160,7 @@ export const Turnstile = ({ onVerify, onError, onExpire }: TurnstileProps) => {
                 widgetIdRef.current = null;
             }
         };
-    }, [siteKey]);
+    }, []);
 
     return (
         <div
