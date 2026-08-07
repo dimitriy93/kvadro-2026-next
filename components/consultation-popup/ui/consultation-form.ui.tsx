@@ -3,6 +3,7 @@ import {FormEvent, useState} from 'react';
 import {usePathname} from 'next/navigation';
 import {services} from '@/config/routes/services.routes';
 import {createPhoneChangeHandler} from '@/lib/phone-mask';
+import {Turnstile, Honeypot} from '@/components/turnstile';
 
 interface IConsultationFormProps {
     onSuccess?: () => void;
@@ -15,6 +16,7 @@ export const ConsultationForm = ({onSuccess}: IConsultationFormProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [error, setError] = useState('');
     const [phone, setPhone] = useState('');
+    const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
     const phoneChangeHandler = createPhoneChangeHandler(setPhone);
 
@@ -36,6 +38,7 @@ export const ConsultationForm = ({onSuccess}: IConsultationFormProps) => {
         const phone = String(formData.get('phone') ?? '').trim();
         const direction = String(formData.get('service') ?? '').trim();
         const message = String(formData.get('message') ?? '').trim();
+        const website = String(formData.get('website') ?? '').trim();
 
         try {
             const response = await fetch('/api/telegram', {
@@ -49,6 +52,8 @@ export const ConsultationForm = ({onSuccess}: IConsultationFormProps) => {
                     direction,
                     message,
                     pathname,
+                    website,
+                    turnstileToken,
                 }),
             });
 
@@ -142,6 +147,10 @@ export const ConsultationForm = ({onSuccess}: IConsultationFormProps) => {
                 <span>Сообщение</span>
                 <textarea name="message" placeholder="Расскажите об объекте"/>
             </label>
+
+            <Honeypot/>
+
+            <Turnstile onVerify={setTurnstileToken}/>
 
             <button disabled={loading}>{loading ? 'Отправляем...' : 'Отправить заявку'}</button>
 

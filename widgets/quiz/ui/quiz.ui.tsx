@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { calculatePrice } from '../lib/calculate-price';
 import { QuizAnswers } from '@/widgets/quiz/quiz.types';
 import { createPhoneChangeHandler } from '@/lib/phone-mask';
+import { Turnstile, Honeypot } from '@/components/turnstile';
 import './quiz.styles.scss';
 
 const QUIZ_STEPS = ['object', 'area', 'systems', 'contact', 'result'] as const;
@@ -20,6 +21,8 @@ export const Quiz = ({ onClose }: { onClose?: () => void }) => {
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [website, setWebsite] = useState('');
 
   const [errors, setErrors] = useState<{
     name?: string;
@@ -96,8 +99,6 @@ export const Quiz = ({ onClose }: { onClose?: () => void }) => {
       },
     };
 
-    console.log('LEAD:', lead);
-
     setSending(true);
     setSubmitError('');
 
@@ -113,6 +114,8 @@ export const Quiz = ({ onClose }: { onClose?: () => void }) => {
           direction: 'Предварительный расчёт',
           pathname,
           type: 'quiz',
+          website,
+          turnstileToken,
           quizAnswers: {
             objectType: answers.objectType,
             area: answers.area,
@@ -157,7 +160,6 @@ export const Quiz = ({ onClose }: { onClose?: () => void }) => {
       },
     };
 
-    console.log('ANONYMOUS LEAD:', lead);
     next();
   };
 
@@ -329,6 +331,9 @@ export const Quiz = ({ onClose }: { onClose?: () => void }) => {
                     />
                     {errors.phone && <div className="quiz__error">{errors.phone}</div>}
                   </label>
+
+                  <Honeypot onChange={setWebsite} />
+                  <Turnstile onVerify={setTurnstileToken} />
 
                   <div className="quiz__actions">
                     <button className="quiz__primary" onClick={handleLeadWithContact} disabled={sending}>
