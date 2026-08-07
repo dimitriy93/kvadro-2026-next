@@ -338,7 +338,7 @@ export const Quiz = ({onClose}: { onClose?: () => void }) => {
                                         <Turnstile onVerify={setTurnstileToken}/>
                                         <div className="quiz__actions">
                                             <button className="quiz__primary" onClick={handleLeadWithContact}
-                                                    disabled={sending}>
+                                                    disabled={sending || !turnstileToken}>
                                                 {sending ? 'Отправляем...' : 'Получить предварительный расчёт'}
                                             </button>
 

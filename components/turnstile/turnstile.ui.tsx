@@ -31,64 +31,14 @@ interface TurnstileProps {
     onExpire?: () => void;
 }
 
-const TURNSTILE_SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-
+// Клиентский ключ Cloudflare Turnstile (используется только на клиенте).
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
-
-// Временный безопасный лог: наличие ключа без вывода самого значения.
-console.log('Turnstile site key exists:', Boolean(TURNSTILE_SITE_KEY));
-
-// Кэшируем Promise загрузки скрипта, чтобы не грузить его повторно при
-// открытии/закрытии попапов и переиспользовании в нескольких формах.
-let scriptPromise: Promise<boolean> | null = null;
-
-const loadTurnstileScript = (): Promise<boolean> => {
-    if (scriptPromise) return scriptPromise;
-
-    scriptPromise = new Promise((resolve) => {
-        const existing = document.querySelector<HTMLScriptElement>(
-            `script[src^="${TURNSTILE_SCRIPT_URL}"]`
-        );
-        if (existing) {
-            resolve(true);
-            return;
-        }
-
-        const script = document.createElement('script');
-        script.src = TURNSTILE_SCRIPT_URL;
-        script.async = true;
-        script.onload = () => resolve(true);
-        script.onerror = () => resolve(false);
-        document.head.appendChild(script);
-    });
-
-    return scriptPromise;
-};
-
-/** Дожидается появления window.turnstile с ограниченным числом попыток. */
-const waitForTurnstile = (windowRef: Window, attempts = 200): Promise<boolean> => {
-    return new Promise((resolve) => {
-        const check = (left: number) => {
-            if ((windowRef as Window & { turnstile?: unknown }).turnstile) {
-                resolve(true);
-                return;
-            }
-            if (left <= 0) {
-                resolve(false);
-                return;
-            }
-            setTimeout(() => check(left - 1), 50);
-        };
-        check(attempts);
-    });
-};
 
 /**
  * Клиентский компонент Cloudflare Turnstile.
  *
- * Загружает официальный скрипт Turnstile, рендерит виджет ровно один раз и
- * передаёт полученный токен через колбэк onVerify. Используется повторно
- * в ConsultationForm и Quiz.
+ * Скрипт API (https://challenges.cloudflare.com/turnstile/v0/api.js) загружается
+ * глобально в app/layout.tsx. Здесь выполняется только рендер виджета.
  */
 export const Turnstile = ({onVerify, onError, onExpire}: TurnstileProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -107,50 +57,52 @@ export const Turnstile = ({onVerify, onError, onExpire}: TurnstileProps) => {
 
     // Рендер виджета — побочный эффект, выполняется только внутри useEffect.
     useEffect(() => {
-        let cancelled = false;
-
-        const renderWidget = () => {
-            const container = containerRef.current;
-            if (!cancelled && container && !widgetIdRef.current) {
-                if (!window.turnstile) return;
-
-                // Страховка от повторного рендера в контейнере.
-                container.replaceChildren();
-
-                widgetIdRef.current = window.turnstile.render(container, {
-                    sitekey: TURNSTILE_SITE_KEY,
-                    callback: (token: string) => {
-                        console.log('TURNSTILE TOKEN:', token);
-                        onVerifyRef.current(token);
-                    },
-                    'error-callback': () => onErrorRef.current?.(),
-                    'expired-callback': () => {
-                        onVerifyRef.current(null);
-                        onExpireRef.current?.();
-                    },
-                });
-            }
-        };
-
+        // 1. Проверка наличия клиентского site key.
         if (!TURNSTILE_SITE_KEY) {
-            console.error('Turnstile site key is empty in production build.');
+            console.error('TURNSTILE SITE KEY is empty (NEXT_PUBLIC_TURNSTILE_SITE_KEY).');
             onErrorRef.current?.();
             return;
         }
 
-        loadTurnstileScript()
-            .then((loaded) => {
-                if (cancelled || !loaded) return;
-                return waitForTurnstile(window);
-            })
-            .then((ready) => {
-                if (cancelled || !ready) return;
-                renderWidget();
-            })
-            .catch(() => onErrorRef.current?.());
+        // 2. Проверка наличия window.turnstile (скрипт грузится в layout).
+        if (!window.turnstile) {
+            console.error(
+                'TURNSTILE OBJECT is undefined. Скрипт https://challenges.cloudflare.com/turnstile/v0/api.js не загрузился.'
+            );
+            onErrorRef.current?.();
+            return;
+        }
+
+        // 3. Проверка наличия контейнера.
+        const container = containerRef.current;
+        if (!container) {
+            console.error('TURNSTILE CONTAINER is undefined.');
+            return;
+        }
+
+        // 4. Рендер виджета ровно один раз.
+        if (widgetIdRef.current !== null) return;
+
+        console.log('TURNSTILE SITE KEY:', TURNSTILE_SITE_KEY);
+        console.log('TURNSTILE OBJECT:', window.turnstile);
+        console.log('TURNSTILE CONTAINER:', container);
+
+        widgetIdRef.current = window.turnstile.render(container, {
+            sitekey: TURNSTILE_SITE_KEY,
+            callback: (token: string) => {
+                console.log('TURNSTILE TOKEN:', token);
+                onVerifyRef.current(token);
+            },
+            'error-callback': () => onErrorRef.current?.(),
+            'expired-callback': () => {
+                onVerifyRef.current(null);
+                onExpireRef.current?.();
+            },
+        });
+
+        console.log('TURNSTILE WIDGET ID:', widgetIdRef.current);
 
         return () => {
-            cancelled = true;
             if (widgetIdRef.current && window.turnstile) {
                 try {
                     window.turnstile.remove(widgetIdRef.current);

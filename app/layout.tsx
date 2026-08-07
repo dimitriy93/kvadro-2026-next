@@ -16,6 +16,11 @@ export default function LandingLayout({ children }) {
   return (
     <html lang="ru" className={inter.className}>
       <body>
+        <script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+          async
+          defer
+        />
         <ConsultationProvider>
           {children}
           <FloatingMenu />
