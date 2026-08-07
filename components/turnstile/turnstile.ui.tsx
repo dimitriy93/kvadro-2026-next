@@ -107,7 +107,6 @@ export const Turnstile = ({onVerify, onError, onExpire}: TurnstileProps) => {
                 try {
                     window.turnstile.remove(widgetIdRef.current);
                 } catch {
-                    // виджет уже удалён
                 }
                 widgetIdRef.current = null;
             }

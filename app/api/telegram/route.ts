@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { sendTelegramLead } from '@/lib/telegram';
-import { QuizLeadAnswers, TelegramLead } from '@/types/telegram';
+import {NextRequest, NextResponse} from 'next/server';
+import {sendTelegramLead} from '@/lib/telegram';
+import {QuizLeadAnswers, TelegramLead} from '@/types/telegram';
 
 export const runtime = 'nodejs';
 
@@ -43,7 +43,7 @@ const verifyTurnstile = async (token: string): Promise<boolean> => {
     try {
         const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: form.toString(),
         });
 
@@ -78,29 +78,32 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
     try {
         const body = (await request.json()) as TelegramLeadRequest | null;
 
-        const { name, phone, direction, message, pathname, type, quizAnswers, turnstileToken, website } =
-            body ?? {};
+        console.log('API RECEIVED BODY:', body);
+        console.log('API RECEIVED TURNSTILE TOKEN:', body?.turnstileToken);
+
+        const {name, phone, direction, message, pathname, type, quizAnswers, turnstileToken, website} =
+        body ?? {};
 
         // 1. Проверка Honeypot — если скрытое поле заполнено, считаем запрос ботом
         // и молча возвращаем успех, чтобы бот не понял, что заблокирован.
         if (website && website.trim().length > 0) {
-            return NextResponse.json({ success: true }, { status: 200 });
+            return NextResponse.json({success: true}, {status: 200});
         }
 
         // 2. Проверка Turnstile
         if (!turnstileToken) {
             console.error('Request rejected: turnstileToken is missing.');
-            return NextResponse.json({ success: false }, { status: 403 });
+            return NextResponse.json({success: false}, {status: 403});
         }
         const turnstileValid = await verifyTurnstile(turnstileToken);
         if (!turnstileValid) {
             console.error('Request rejected: Turnstile verification failed.');
-            return NextResponse.json({ success: false }, { status: 403 });
+            return NextResponse.json({success: false}, {status: 403});
         }
 
         // 3. Валидация обязательных полей
         if (!name || !phone || !direction) {
-            return NextResponse.json({ success: false }, { status: 400 });
+            return NextResponse.json({success: false}, {status: 400});
         }
 
         // 4. Отправка в Telegram
@@ -115,8 +118,8 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
 
         await sendTelegramLead(lead, type === 'quiz' ? 'quiz' : 'consultation');
 
-        return NextResponse.json({ success: true }, { status: 200 });
+        return NextResponse.json({success: true}, {status: 200});
     } catch {
-        return NextResponse.json({ success: false }, { status: 500 });
+        return NextResponse.json({success: false}, {status: 500});
     }
 };
