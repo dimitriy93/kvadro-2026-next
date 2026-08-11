@@ -1,5 +1,5 @@
 'use client';
-import {FormEvent, useState} from 'react';
+import {FormEvent, useEffect, useState} from 'react';
 import {usePathname} from 'next/navigation';
 import {services} from '@/config/routes/services.routes';
 import {createPhoneChangeHandler} from '@/lib/phone-mask';
@@ -17,6 +17,10 @@ export const ConsultationForm = ({onSuccess}: IConsultationFormProps) => {
     const [error, setError] = useState('');
     const [phone, setPhone] = useState('');
     const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+    useEffect(() => {
+        console.log('CONSULTATION FORM TOKEN STATE:', turnstileToken);
+    }, [turnstileToken]);
 
     const phoneChangeHandler = createPhoneChangeHandler(setPhone);
 
@@ -151,7 +155,13 @@ export const ConsultationForm = ({onSuccess}: IConsultationFormProps) => {
 
             <Honeypot/>
 
-            <Turnstile onVerify={setTurnstileToken}/>
+            {/*<Turnstile onVerify={setTurnstileToken}/>*/}
+            <Turnstile
+                onVerify={(token) => {
+                    console.log('CONSULTATION FORM onVerify:', token);
+                    setTurnstileToken(token);
+                }}
+            />
 
             <button disabled={loading}>{loading ? 'Отправляем...' : 'Отправить заявку'}</button>
 

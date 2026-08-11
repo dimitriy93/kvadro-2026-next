@@ -57,9 +57,24 @@ export const Turnstile = ({onVerify, onError, onExpire}: TurnstileProps) => {
 
     // Рендер виджета — побочный эффект, выполняется только внутри useEffect.
     useEffect(() => {
-        // 1. Проверка наличия клиентского site key.
+        console.log('========== TURNSTILE DEBUG ==========');
+        console.log('NODE_ENV:', process.env.NODE_ENV);
+        console.log(
+            'NEXT_PUBLIC_TURNSTILE_SITE_KEY:',
+            process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+        );
+        console.log(
+            'TURNSTILE_SITE_KEY constant:',
+            TURNSTILE_SITE_KEY
+        );
+        console.log('window.turnstile:', window.turnstile);
+        console.log('======================================');
+
+        // 1. Проверка клиентского site key
         if (!TURNSTILE_SITE_KEY) {
-            console.error('TURNSTILE SITE KEY is empty (NEXT_PUBLIC_TURNSTILE_SITE_KEY).');
+            console.error(
+                'TURNSTILE SITE KEY is empty (NEXT_PUBLIC_TURNSTILE_SITE_KEY).'
+            );
             onErrorRef.current?.();
             return;
         }
