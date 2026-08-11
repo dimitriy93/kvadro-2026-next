@@ -14,8 +14,16 @@ export const metadata: Metadata = {
 };
 
 export default function LandingLayout({children}) {
+    const turnstileSiteKey =
+        process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
+
+    console.log(
+        'TURNSTILE SERVER SITE KEY:',
+        process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? 'present' : 'missing'
+    );
+
     return (
-        <ConsultationProvider>
+        <ConsultationProvider turnstileSiteKey={turnstileSiteKey}>
             <Header/>
             {children}
             <Footer/>

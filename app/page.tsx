@@ -1,32 +1,12 @@
-'use client';
-import { useState } from 'react';
-import { Services } from '@/widgets/services';
-import { Stats } from '@/widgets/stats';
-import { Clients } from '@/widgets/clients';
-import { CTA } from '@/widgets/cta';
-import { Footer } from '@/widgets/footer';
-import { Popup } from '@/components/popup';
-import { Hero } from '@/widgets/hero';
-import { Quiz } from '@/widgets/quiz';
-import '@/styles/landing.scss';
+import { LandingContent } from './landing-content';
 
-function Page() {
-  const [isQuizOpen, setQuizOpen] = useState(false);
+export default function Page() {
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
-  return (
-    <>
-      <Hero onOpenQuiz={() => setQuizOpen(true)} />
-      <Services />
-      <Stats />
-      <Clients />
-      <CTA onOpenQuiz={() => setQuizOpen(true)} />
-      <Footer />
-
-      <Popup isOpen={isQuizOpen} onClose={() => setQuizOpen(false)}>
-        <Quiz onClose={() => setQuizOpen(false)} />
-      </Popup>
-    </>
+  console.log(
+    'TURNSTILE SERVER SITE KEY:',
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? 'present' : 'missing'
   );
-}
 
-export default Page;
+  return <LandingContent turnstileSiteKey={turnstileSiteKey} />;
+}

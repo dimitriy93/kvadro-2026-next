@@ -7,9 +7,11 @@ import {Turnstile, Honeypot} from '@/components/turnstile';
 
 interface IConsultationFormProps {
     onSuccess?: () => void;
+    /** Публичный Cloudflare Turnstile Site Key, полученный на серверной стороне. */
+    turnstileSiteKey: string;
 }
 
-export const ConsultationForm = ({onSuccess}: IConsultationFormProps) => {
+export const ConsultationForm = ({onSuccess, turnstileSiteKey}: IConsultationFormProps) => {
     const pathname = usePathname();
     const [loading, setLoading] = useState(false);
     const [service, setService] = useState('');
@@ -17,6 +19,11 @@ export const ConsultationForm = ({onSuccess}: IConsultationFormProps) => {
     const [error, setError] = useState('');
     const [phone, setPhone] = useState('');
     const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+    console.log(
+        'CONSULTATION TURNSTILE SITE KEY:',
+        turnstileSiteKey ? 'present' : 'missing'
+    );
 
     useEffect(() => {
         console.log('CONSULTATION FORM TOKEN STATE:', turnstileToken);
@@ -157,6 +164,7 @@ export const ConsultationForm = ({onSuccess}: IConsultationFormProps) => {
 
             {/*<Turnstile onVerify={setTurnstileToken}/>*/}
             <Turnstile
+                siteKey={turnstileSiteKey}
                 onVerify={(token) => {
                     console.log('CONSULTATION FORM onVerify:', token);
                     setTurnstileToken(token);

@@ -7,9 +7,11 @@ import './consultation-popup.styles.scss';
 interface IConsultationPopupProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Публичный Cloudflare Turnstile Site Key, полученный на серверной стороне. */
+  turnstileSiteKey: string;
 }
 
-export const ConsultationPopup = ({ isOpen, onClose }: IConsultationPopupProps) => {
+export const ConsultationPopup = ({ isOpen, onClose, turnstileSiteKey }: IConsultationPopupProps) => {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
@@ -46,7 +48,10 @@ export const ConsultationPopup = ({ isOpen, onClose }: IConsultationPopupProps) 
               <h2>Получить консультацию</h2>
               <p>Подберём решение под ваш объект</p>
             </div>
-            <ConsultationForm onSuccess={() => setSuccess(true)} />
+            <ConsultationForm
+              onSuccess={() => setSuccess(true)}
+              turnstileSiteKey={turnstileSiteKey}
+            />
           </>
         )}
       </div>

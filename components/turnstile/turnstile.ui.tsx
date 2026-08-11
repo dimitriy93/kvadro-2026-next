@@ -23,6 +23,8 @@ declare global {
 }
 
 interface TurnstileProps {
+    /** Публичный Cloudflare Turnstile Site Key (получается на сервере и передаётся через prop). */
+    siteKey: string;
     /** Вызывается после успешной проверки виджета с полученным токеном. */
     onVerify: (token: string | null) => void;
     /** Вызывается при ошибке загрузки/проверки виджета. */
@@ -31,16 +33,17 @@ interface TurnstileProps {
     onExpire?: () => void;
 }
 
-// Клиентский ключ Cloudflare Turnstile (используется только на клиенте).
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
-
 /**
  * Клиентский компонент Cloudflare Turnstile.
+ *
+ * Сайт-ключ (siteKey) передаётся через prop из серверного компонента, чтобы его
+ * значение бралось из runtime-окружения, а не инлайнилось в клиентский бандл на
+ * этапе сборки (как это происходит с process.env.NEXT_PUBLIC_* в клиентском коде).
  *
  * Скрипт API (https://challenges.cloudflare.com/turnstile/v0/api.js) загружается
  * глобально в app/layout.tsx. Здесь выполняется только рендер виджета.
  */
-export const Turnstile = ({onVerify, onError, onExpire}: TurnstileProps) => {
+export const Turnstile = ({siteKey, onVerify, onError, onExpire}: TurnstileProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetIdRef = useRef<string | null>(null);
 
@@ -56,25 +59,18 @@ export const Turnstile = ({onVerify, onError, onExpire}: TurnstileProps) => {
     }, [onVerify, onError, onExpire]);
 
     // Рендер виджета — побочный эффект, выполняется только внутри useEffect.
+    // Зависимость [siteKey] гарантирует, что если ключ пришёл позже (например,
+    // после гидрации серверного компонента), виджет будет отрисован повторно, а
+    // не останется с пустым siteKey.
     useEffect(() => {
-        console.log('========== TURNSTILE DEBUG ==========');
-        console.log('NODE_ENV:', process.env.NODE_ENV);
         console.log(
-            'NEXT_PUBLIC_TURNSTILE_SITE_KEY:',
-            process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+            'TURNSTILE PROP SITE KEY:',
+            siteKey ? 'present' : 'missing'
         );
-        console.log(
-            'TURNSTILE_SITE_KEY constant:',
-            TURNSTILE_SITE_KEY
-        );
-        console.log('window.turnstile:', window.turnstile);
-        console.log('======================================');
 
-        // 1. Проверка клиентского site key
-        if (!TURNSTILE_SITE_KEY) {
-            console.error(
-                'TURNSTILE SITE KEY is empty (NEXT_PUBLIC_TURNSTILE_SITE_KEY).'
-            );
+        // 1. Проверка клиентского site key.
+        if (!siteKey) {
+            console.error('TURNSTILE SITE KEY is empty.');
             onErrorRef.current?.();
             return;
         }
@@ -95,15 +91,11 @@ export const Turnstile = ({onVerify, onError, onExpire}: TurnstileProps) => {
             return;
         }
 
-        // 4. Рендер виджета ровно один раз.
+        // 4. Рендер виджета ровно один раз на актуальный siteKey.
         if (widgetIdRef.current !== null) return;
 
-        console.log('TURNSTILE SITE KEY:', TURNSTILE_SITE_KEY);
-        console.log('TURNSTILE OBJECT:', window.turnstile);
-        console.log('TURNSTILE CONTAINER:', container);
-
         widgetIdRef.current = window.turnstile.render(container, {
-            sitekey: TURNSTILE_SITE_KEY,
+            sitekey: siteKey,
             callback: (token: string) => {
                 console.log('TURNSTILE TOKEN:', token);
                 onVerifyRef.current(token);
@@ -115,8 +107,6 @@ export const Turnstile = ({onVerify, onError, onExpire}: TurnstileProps) => {
             },
         });
 
-        console.log('TURNSTILE WIDGET ID:', widgetIdRef.current);
-
         return () => {
             if (widgetIdRef.current && window.turnstile) {
                 try {
@@ -126,7 +116,7 @@ export const Turnstile = ({onVerify, onError, onExpire}: TurnstileProps) => {
                 widgetIdRef.current = null;
             }
         };
-    }, []);
+    }, [siteKey]);
 
     return (
         <div

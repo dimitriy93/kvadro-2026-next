@@ -10,7 +10,7 @@ import './quiz.styles.scss';
 
 const QUIZ_STEPS = ['object', 'area', 'systems', 'contact', 'result'] as const;
 
-export const Quiz = ({onClose}: { onClose?: () => void }) => {
+export const Quiz = ({onClose, turnstileSiteKey}: { onClose?: () => void; turnstileSiteKey: string }) => {
     const pathname = usePathname();
     const [step, setStep] = useState(0);
     const [direction, setDirection] = useState<1 | -1>(1);
@@ -335,7 +335,7 @@ export const Quiz = ({onClose}: { onClose?: () => void }) => {
                                         </label>
 
                                         <Honeypot onChange={setWebsite}/>
-                                        <Turnstile onVerify={setTurnstileToken}/>
+                                        <Turnstile siteKey={turnstileSiteKey} onVerify={setTurnstileToken}/>
                                         <div className="quiz__actions">
                                             <button className="quiz__primary" onClick={handleLeadWithContact}
                                                     disabled={sending || !turnstileToken}>

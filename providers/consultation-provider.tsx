@@ -9,7 +9,13 @@ interface ConsultationContext {
 
 const ConsultationContext = createContext<ConsultationContext | null>(null);
 
-export const ConsultationProvider = ({ children }: { children: ReactNode }) => {
+interface ConsultationProviderProps {
+  children: ReactNode;
+  /** Публичный Cloudflare Turnstile Site Key, полученный на серверной стороне. */
+  turnstileSiteKey: string;
+}
+
+export const ConsultationProvider = ({ children, turnstileSiteKey }: ConsultationProviderProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const openConsultation = () => {
@@ -24,7 +30,11 @@ export const ConsultationProvider = ({ children }: { children: ReactNode }) => {
     <ConsultationContext.Provider value={{ openConsultation, closeConsultation }}>
       {children}
 
-      <ConsultationPopup isOpen={isOpen} onClose={closeConsultation} />
+      <ConsultationPopup
+        isOpen={isOpen}
+        onClose={closeConsultation}
+        turnstileSiteKey={turnstileSiteKey}
+      />
     </ConsultationContext.Provider>
   );
 };

@@ -13,6 +13,14 @@ export const metadata: Metadata = {
 };
 
 export default function LandingLayout({ children }) {
+  const turnstileSiteKey =
+      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
+
+  console.log(
+      'TURNSTILE SERVER SITE KEY:',
+      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? 'present' : 'missing'
+  );
+
   return (
     <html lang="ru" className={inter.className}>
       <body>
@@ -21,7 +29,7 @@ export default function LandingLayout({ children }) {
           async
           defer
         />
-        <ConsultationProvider>
+        <ConsultationProvider turnstileSiteKey={turnstileSiteKey}>
           {children}
           <FloatingMenu />
         </ConsultationProvider>
