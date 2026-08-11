@@ -19,16 +19,6 @@ export const ConsultationForm = ({onSuccess, turnstileSiteKey}: IConsultationFor
     const [error, setError] = useState('');
     const [phone, setPhone] = useState('');
     const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-
-    console.log(
-        'CONSULTATION TURNSTILE SITE KEY:',
-        turnstileSiteKey ? 'present' : 'missing'
-    );
-
-    useEffect(() => {
-        console.log('CONSULTATION FORM TOKEN STATE:', turnstileToken);
-    }, [turnstileToken]);
-
     const phoneChangeHandler = createPhoneChangeHandler(setPhone);
 
     const servicesTitles: string[] = [

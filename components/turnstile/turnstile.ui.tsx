@@ -63,10 +63,9 @@ export const Turnstile = ({siteKey, onVerify, onError, onExpire}: TurnstileProps
     // после гидрации серверного компонента), виджет будет отрисован повторно, а
     // не останется с пустым siteKey.
     useEffect(() => {
-        console.log(
-            'TURNSTILE PROP SITE KEY:',
-            siteKey ? 'present' : 'missing'
-        );
+        console.log('[TURNSTILE DEBUG] Turnstile:', {
+            propExists: Boolean(siteKey),
+        });
 
         // 1. Проверка клиентского site key.
         if (!siteKey) {

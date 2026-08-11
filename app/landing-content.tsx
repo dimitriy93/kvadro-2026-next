@@ -15,6 +15,10 @@ interface LandingContentProps {
 }
 
 export function LandingContent({ turnstileSiteKey }: LandingContentProps) {
+  console.log('[TURNSTILE DEBUG] LandingContent:', {
+    propExists: Boolean(turnstileSiteKey),
+  });
+
   const [isQuizOpen, setQuizOpen] = useState(false);
 
   return (
