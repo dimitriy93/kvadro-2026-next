@@ -45,7 +45,7 @@ const ContactsPage = () => (
                 <article className="contacts-card">
                     <span className="contacts-card__label">Адрес</span>
                     <div className="contacts-card__value">
-                        Московская область, г. Электросталь, ул. Чернышевского
+                        Московская область, г. Электросталь, ул. Чернышевского 20
                     </div>
                     <p className="contacts-card__hint">Работаем по городу и Московской области</p>
                 </article>

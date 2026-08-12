@@ -21,7 +21,6 @@ import {
     workflowSteps,
     works,
 } from '../config/video-surveillance.data';
-import './video-surveillance.styles.scss';
 
 const VideoSurveillancePage = () => {
     const [activeFaq, setActiveFaq] = useState<number | null>(null);
