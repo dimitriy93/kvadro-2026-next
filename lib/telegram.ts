@@ -137,7 +137,15 @@ const sendTelegramText = async (text: string): Promise<void> => {
     );
 
     if (!response.ok) {
-        throw new Error(`Telegram API error: ${response.status}`);
+        const errorBody = await response.text();
+
+        console.error('TELEGRAM API ERROR:', {
+            status: response.status,
+            body: errorBody,
+            text,
+        });
+
+        throw new Error(`Telegram API error: ${response.status} ${errorBody}`);
     }
 };
 

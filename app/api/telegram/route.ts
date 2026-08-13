@@ -58,14 +58,6 @@ const verifyTurnstile = async (token: string): Promise<boolean> => {
         return false;
     }
 
-    console.log('Turnstile verification response:', {
-        success: data.success,
-        hostname: data.hostname,
-        action: data.action,
-        challenge_ts: data['challenge_ts'],
-        'error-codes': data['error-codes'],
-    });
-
     if (data.success !== true) {
         console.error('Turnstile verification failed. error-codes:', data['error-codes']);
         return false;
@@ -77,10 +69,6 @@ const verifyTurnstile = async (token: string): Promise<boolean> => {
 export const POST = async (request: NextRequest): Promise<NextResponse> => {
     try {
         const body = (await request.json()) as TelegramLeadRequest | null;
-
-        console.log('API RECEIVED BODY:', body);
-        console.log('API RECEIVED TURNSTILE TOKEN:', body?.turnstileToken);
-
         const {name, phone, direction, message, pathname, type, quizAnswers, turnstileToken, website} =
         body ?? {};
 
@@ -119,7 +107,12 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
         await sendTelegramLead(lead, type === 'quiz' ? 'quiz' : 'consultation');
 
         return NextResponse.json({success: true}, {status: 200});
-    } catch {
-        return NextResponse.json({success: false}, {status: 500});
+    } catch (error) {
+        console.error('API /api/telegram ERROR:', error);
+
+        return NextResponse.json(
+            {success: false},
+            {status: 500}
+        );
     }
 };

@@ -42,7 +42,6 @@ export const ConsultationForm = ({onSuccess, turnstileSiteKey}: IConsultationFor
         const website = String(formData.get('website') ?? '').trim();
 
         try {
-            console.log('TURNSTILE BEFORE SEND:', turnstileToken);
             const response = await fetch('/api/telegram', {
                 method: 'POST',
                 headers: {
@@ -152,16 +151,16 @@ export const ConsultationForm = ({onSuccess, turnstileSiteKey}: IConsultationFor
 
             <Honeypot/>
 
-            {/*<Turnstile onVerify={setTurnstileToken}/>*/}
             <Turnstile
                 siteKey={turnstileSiteKey}
                 onVerify={(token) => {
-                    console.log('CONSULTATION FORM onVerify:', token);
-                    setTurnstileToken(token);
+                    setTurnstileToken(token)
                 }}
             />
 
-            <button disabled={loading}>{loading ? 'Отправляем...' : 'Отправить заявку'}</button>
+            <button disabled={loading || !turnstileToken || !service}>
+                {loading ? 'Отправляем...' : 'Отправить заявку'}
+            </button>
 
             <small>Нажимая кнопку, вы соглашаетесь с обработкой персональных данных</small>
 

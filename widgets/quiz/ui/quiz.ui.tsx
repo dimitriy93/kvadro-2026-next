@@ -103,7 +103,6 @@ export const Quiz = ({onClose, turnstileSiteKey}: { onClose?: () => void; turnst
         setSubmitError('');
 
         try {
-            console.log('TURNSTILE BEFORE SEND:', turnstileToken);
             const response = await fetch('/api/telegram', {
                 method: 'POST',
                 headers: {
