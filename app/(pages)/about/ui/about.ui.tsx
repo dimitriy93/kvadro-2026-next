@@ -6,7 +6,6 @@ import {useScrollMotion} from '@/hooks/use-scroll-motion';
 import {useLayoutEffect, useRef, useState} from 'react';
 import {FireDetectorIcon} from '@/components/fire-detector-icon';
 import {useScrollProgress} from '@/hooks/use-scroll-progress';
-import {Breadcrumbs} from "@/components/breadcrumbs";
 import {Heading} from '@/components/heading';
 import {whiteSmokeImg, smartSecurityImg} from '@/app/_assets/images/about';
 import {directions, stats, team, timeline} from '../config/about.data';
@@ -48,7 +47,6 @@ const AboutPage = () => {
             <div className="about__glow about__glow--right"/>
 
             <div className="container">
-                <Breadcrumbs/>
                 <section className="about__hero">
                     <motion.div
                         className="about__hero-content"

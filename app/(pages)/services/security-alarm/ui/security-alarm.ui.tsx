@@ -1,6 +1,5 @@
 'use client';
 
-import {Breadcrumbs} from "@/components/breadcrumbs";
 import Image from 'next/image';
 import {useConsultation} from '@/providers/consultation-provider';
 import {useState} from 'react';
@@ -33,7 +32,6 @@ const SecurityAlarmPage = () => {
             <div className="sp__glow sp__glow--right"/>
 
             <div className="container">
-                <Breadcrumbs/>
                 <section className="sp-hero">
                     <div className="sp-hero__content">
                         <Heading eyebrow="Охранная сигнализация" mode="dark" as="h1">

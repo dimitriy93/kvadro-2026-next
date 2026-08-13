@@ -4,7 +4,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {contacts} from "@/config/brand/contacts";
 import {ConsultationBlock} from '@/components/consultation-block';
-import {Breadcrumbs} from "@/components/breadcrumbs";
 import {Heading} from '@/components/heading';
 import './contacts.styles.scss';
 
@@ -14,7 +13,6 @@ const ContactsPage = () => (
         <div className="contacts__glow contacts__glow--right"/>
 
         <div className="container">
-            <Breadcrumbs/>
             <section className="contacts__hero">
                 <Heading eyebrow={`ООО "КВАДРО-АРСЕНАЛ"`} mode="dark" as="h1">
                     Свяжитесь с нами удобным способом

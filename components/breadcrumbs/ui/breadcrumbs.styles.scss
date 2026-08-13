@@ -50,7 +50,6 @@
       color: #fff;
       border-color: rgba(201, 169, 98, .35);
       background: rgba(201, 169, 98, .08);
-      transform: translateY(-2px);
     }
   }
 
@@ -71,7 +70,6 @@
   }
 
   @media (max-width: 768px) {
-    margin-bottom: 24px;
     &__list {
       gap: 6px;
     }

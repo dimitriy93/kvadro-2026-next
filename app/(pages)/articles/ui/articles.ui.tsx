@@ -1,6 +1,5 @@
 'use client';
 
-import {Breadcrumbs} from "@/components/breadcrumbs";
 import Image from 'next/image';
 import Link from 'next/link';
 import {useMemo, useState} from 'react';
@@ -78,8 +77,6 @@ const ArticlesPage = () => {
     return (
         <main className="articles">
             <div className="container articles__container">
-                <Breadcrumbs/>
-
                 <section className="articles-hero">
                     <div className="articles-hero__content">
                         <span

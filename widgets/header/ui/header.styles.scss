@@ -1,51 +1,91 @@
+@use "@/styles/_vars" as *;
+
+/*
+ * Header — единый верхнеуровневый layout-блок сайта.
+ *  ├── header__main       — основная строка (логотип), плавающая стеклянная панель
+ *  └── header__breadcrumbs— отдельная визуальная полоса хлебных крошек
+ *
+ * Breadcrumbs намеренно вынесен из page-level `.container` и его `gap`.
+ * Header — overlay (не участвует в потоке), поэтому padding страниц
+ * (верхняя зона под плавающий header) не меняется и page-gap не затрагивается.
+ */
 .header {
-  @include glass-panel(12);
   position: absolute;
-  top: 15px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none; /* не блокирует скролл/клики по пустой области */
 
-  .logo {
-    margin-bottom: 0;
-    @include gap(8, 12);
+  &__main {
+    pointer-events: auto;
+    margin-top: 15px;
+    @include glass-panel(12);
 
-    &__image {
-      @include width(30, 50);
+    .logo {
+      margin-bottom: 0;
+      @include gap(8, 12);
+
+      &__image {
+        @include width(30, 50);
+      }
+
+      &__main-title {
+        @include font-size(16, 24);
+      }
+
+      &__sub-title {
+        @include font-size(9, 12);
+      }
+
+      &__container {
+        display: flex;
+        align-items: center;
+      }
     }
+  }
 
-    &__main-title {
-      @include font-size(16, 24);
-    }
-
-    &__sub-title {
-      @include font-size(9, 12);
-    }
-
-    &__container {
-      display: flex;
-      align-items: center;
-    }
+  &__breadcrumbs {
+    pointer-events: auto;
+    width: 100%;
+    max-width: 1400px;
+    box-sizing: border-box;
+    @include padding-x(20, 100);
+    margin-top: 14px;
   }
 }
 
 @media (max-width: 992px) {
   .header {
-    @include glass-panel(24, 0);
-    @include padding-x(20, 100);
     top: 0;
-    display: flex;
-    max-height: 110px;
     width: 100%;
 
-    &__container {
+    &__main {
+      margin-top: 0;
       width: 100%;
-      padding-inline: clamp(24px, 5vw, 80px);
-      justify-content: flex-start;
+      @include glass-panel(24, 0);
+      @include padding-x(20, 100);
+      display: flex;
+      align-items: center;
+
+      > .header__container {
+        width: 100%;
+        padding-inline: clamp(24px, 5vw, 80px);
+        justify-content: flex-start;
+      }
+
+      .logo {
+        width: min(100%, 450px);
+      }
     }
 
-    .logo {
-      width: min(100%, 450px);
+    &__breadcrumbs {
+      max-width: none;
+      @include padding-x(20, 100);
+      margin-top: 10px;
     }
   }
 }

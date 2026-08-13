@@ -1,5 +1,10 @@
 @use "@/styles/_vars" as *;
 
+main {
+  padding-top: 168px;
+  padding-bottom: 120px;
+}
+
 .sp {
   --gold: #c9a962;
   --glass: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
@@ -8,7 +13,6 @@
   --section-gap: clamp(80px, 10vw, 120px);
   position: relative;
   overflow: hidden;
-  padding: clamp(120px, 12vw, 180px) clamp(24px, 5vw, 80px) 120px;
   background: #0b0b0b;
 
   &--fire {
@@ -704,9 +708,6 @@
 }
 
 @media (max-width: 768px) {
-  .sp {
-    padding: clamp(105px, 14vw, 120px) 20px 72px;
-  }
   .sp .container {
     gap: 72px;
   }

@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import {services, servicesIntro} from '../config/service.data';
-import {Breadcrumbs} from "@/components/breadcrumbs";
 import {Heading} from '@/components/heading';
 import './services.styles.scss';
 
@@ -12,7 +11,6 @@ const ServicesPage = () => (
         <div className="services__glow services__glow--right"/>
 
         <div className="container">
-            <Breadcrumbs/>
             <section className="services__hero">
                 <Heading eyebrow='ООО "КВАДРО-АРСЕНАЛ"' mode="dark" as="h1">
                     Системы безопасности для вашего объекта

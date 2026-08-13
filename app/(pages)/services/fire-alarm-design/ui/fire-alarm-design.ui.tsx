@@ -7,7 +7,6 @@ import {fireAlarmDesign} from "@/app/_assets/images/services";
 import {getWorkIcon, IconCheck, IconDocument} from "@/components/service-icons";
 import {ConsultationBlock} from "@/components/consultation-block";
 import {SpotlightCard} from "@/components/spotlight-card";
-import {Breadcrumbs} from "@/components/breadcrumbs";
 import {Heading} from "@/components/heading";
 import {Button} from "@/components/button";
 import {
@@ -33,7 +32,6 @@ const FireAlarmDesignPage = () => {
             <div className="sp__glow sp__glow--right"/>
 
             <div className="container">
-                <Breadcrumbs/>
                 <section className="sp-hero">
                     <div className="sp-hero__content">
                         <Heading eyebrow="Проектирование ПС и СОУЭ" mode="dark" as="h1">
