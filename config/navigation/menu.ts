@@ -4,6 +4,7 @@ import { services } from '../routes/services.routes';
 export const floatingMenu = [
   routes.about,
   routes.services,
+  routes.articles,
   routes.documents,
   routes.contacts,
 ] as const;
@@ -11,6 +12,7 @@ export const floatingMenu = [
 export const footerMenu = [
   routes.about,
   routes.services,
+  routes.articles,
   routes.documents,
   routes.contacts,
 ] as const;

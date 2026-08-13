@@ -25,6 +25,9 @@ export const breadcrumbTitles: Record<string, string> = {
     '/documents':
         'Документы',
 
+    '/articles':
+        'Статьи',
+
     '/contacts':
         'Контакты',
 
