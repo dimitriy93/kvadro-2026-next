@@ -3,30 +3,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import {useMemo, useState} from 'react';
-import {articleCategories, articles, type Article} from '../config/articles.data';
-import {
-    articlesBackgroundImg,
-    accessControlImg,
-    designImg,
-    fireSafetyImg,
-    lowCurrentImg,
-    monitoringImg,
-    securityAlarmImg,
-} from '@/app/_assets/images/articles';
+import {articleCategories, type Article} from '../config/articles.data';
+import {articlesBackgroundImg} from '@/app/_assets/images/articles';
 import './articles.styles.scss';
 
-import type {StaticImageData} from 'next/image';
-
-const imageMap: Record<string, StaticImageData> = {
-    'fire-safety': fireSafetyImg,
-    'security-alarm': securityAlarmImg,
-    monitoring: monitoringImg,
-    'access-control': accessControlImg,
-    design: designImg,
-    'low-current': lowCurrentImg,
-};
-
-const ArticlesPage = () => {
+const ArticlesPage = ({articles}: {articles: Article[]}) => {
     const [activeCategory, setActiveCategory] = useState<string>('all');
 
     const filtered = useMemo(() => {
@@ -51,7 +32,7 @@ const ArticlesPage = () => {
 
             <div className="articles-item__media">
                 <Image
-                    src={imageMap[article.image]}
+                    src={article.cover}
                     alt={article.title}
                     fill
                     sizes="(max-width: 768px) 100vw, 240px"
@@ -127,7 +108,7 @@ const ArticlesPage = () => {
                     <article className="articles-featured">
                         <div className="articles-featured__media">
                             <Image
-                                src={imageMap[featured.image]}
+                                src={featured.cover}
                                 alt={featured.title}
                                 fill
                                 priority

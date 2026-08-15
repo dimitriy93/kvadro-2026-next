@@ -1,4 +1,5 @@
 import {Metadata} from 'next';
+import {getArticles, getCategorySlug, formatPublishedAt} from '@/lib/articles';
 import ArticlesPage from './ui/articles.ui';
 
 export const metadata: Metadata = {
@@ -18,5 +19,18 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-    return <ArticlesPage />;
+    // Список статей формируется автоматически из `content/articles/`
+    // (Article Loader), без ручного поддержания массива.
+    const articles = getArticles().map((article) => ({
+        slug: article.slug,
+        title: article.title,
+        description: article.description,
+        category: article.category,
+        categorySlug: getCategorySlug(article.category),
+        date: formatPublishedAt(article.publishedAt),
+        readingTime: article.readingTime,
+        cover: article.cover,
+    }));
+
+    return <ArticlesPage articles={articles}/>;
 }
