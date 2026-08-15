@@ -3,7 +3,7 @@ import {notFound} from 'next/navigation';
 import {
     getAllArticles,
     getArticleBySlug,
-    getArticleContent,
+    getArticleDetail,
 } from '@/lib/articles';
 import ArticleDetail from './ui/article-detail.ui';
 
@@ -57,7 +57,7 @@ export default async function ArticlePage({params}: ArticlePageProps) {
         notFound();
     }
 
-    const contentHtml = getArticleContent(article.slug);
+    const {html, headings} = getArticleDetail(article.slug);
 
-    return <ArticleDetail article={article} contentHtml={contentHtml}/>;
+    return <ArticleDetail article={article} contentHtml={html} headings={headings}/>;
 }

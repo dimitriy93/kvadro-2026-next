@@ -382,6 +382,13 @@
     padding-top: 16px;
   }
 
+  // Заголовки, на которые ведут якоря «Содержания», не должны прятаться
+  // под плавающим (overlay) header сайта.
+  h2,
+  h3 {
+    scroll-margin-top: clamp(100px, 14vh, 140px);
+  }
+
   h4 {
     @include font-size(17, 21);
   }

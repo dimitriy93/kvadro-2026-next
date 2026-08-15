@@ -1,15 +1,17 @@
-import type {Article} from '@/lib/articles';
+import type {Article, ArticleHeading} from '@/lib/articles';
 import {formatPublishedAt, formatReadingTime} from '@/lib/articles';
 import Image from 'next/image';
 import Link from 'next/link';
 import './article-detail.styles.scss';
+import ArticleNavigation from './article-navigation.ui';
 
 type ArticleDetailProps = {
     article: Article;
     contentHtml: string;
+    headings: ArticleHeading[];
 };
 
-const ArticleDetail = ({article, contentHtml}: ArticleDetailProps) => {
+const ArticleDetail = ({article, contentHtml, headings}: ArticleDetailProps) => {
     const dateLabel = formatPublishedAt(article.publishedAt);
 
     return (
@@ -68,7 +70,6 @@ const ArticleDetail = ({article, contentHtml}: ArticleDetailProps) => {
                             alt={article.title}
                             fill
                             priority
-                            sizes="(max-width: 768px) 100vw, 1100px"
                         />
                     </div>
 
@@ -82,6 +83,8 @@ const ArticleDetail = ({article, contentHtml}: ArticleDetailProps) => {
                         <span>ENGINEERING / ARTICLE</span>
                     </div>
                 </div>
+
+                <ArticleNavigation headings={headings}/>
 
                 <div className="article-content-layout">
 

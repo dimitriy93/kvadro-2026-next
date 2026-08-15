@@ -1,8 +1,9 @@
 import {readdirSync, readFileSync, existsSync} from 'node:fs';
 import path from 'node:path';
 import {marked} from 'marked';
+import {createHeadingIdFactory} from './headings';
 import {getReadingTime, stripMarkdown} from './reading-time';
-import type {Article, ArticleMeta, ArticleStatus} from './types';
+import type {Article, ArticleHeading, ArticleMeta, ArticleStatus} from './types';
 
 /**
  * Article Loader — слой работы со статьями.
@@ -196,26 +197,78 @@ export function getArticleMeta(slug: string): ArticleMeta | null {
 }
 
 /**
+ * Подготавливает сырой Markdown статьи к рендерингу:
+ * относительные пути изображений становятся абсолютными публичными URL.
+ */
+function resolveArticleMarkdown(directory: string, slug: string): string {
+    let markdown = readMarkdown(directory);
+
+    return markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt, rawSrc) => {
+        const resolved = resolveImageSrc(slug, rawSrc);
+        return `![${alt ?? ''}](${resolved})`;
+    });
+}
+
+/**
+ * Рендерит Markdown в HTML и попутно собирает боковую навигацию по
+ * заголовкам h2/h3. Каждому h2/h3 присваивается стабильный HTML `id`,
+ * который используется и как якорь, и как ссылка в «Содержании».
+ */
+function renderArticle(markdown: string): {html: string; headings: ArticleHeading[]} {
+    const headings: ArticleHeading[] = [];
+    const nextHeadingId = createHeadingIdFactory();
+
+    const renderer = new marked.Renderer();
+
+    // Помимо инъекции `id` собираем список пунктов для навигации.
+    renderer.heading = function (this: any, {tokens, depth}: {tokens: any[]; depth: number}) {
+        const inner = this.parser.parseInline(tokens) as string;
+
+        // В навигацию попадают только h2 и h3; остальные заголовки не трогаем.
+        if (depth !== 2 && depth !== 3) {
+            return `<h${depth}>${inner}</h${depth}>\n`;
+        }
+
+        // «Чистый» текст заголовка без разметки — для вывода в навигации.
+        const text = this.parser.parseInline(tokens, this.parser.textRenderer) as string;
+        const id = nextHeadingId(text);
+
+        headings.push({id, text, level: depth as 2 | 3});
+
+        return `<h${depth} id="${id}">${inner}</h${depth}>\n`;
+    };
+
+    const html = marked(markdown, {
+        async: false,
+        gfm: true,
+        breaks: false,
+        renderer,
+    }) as string;
+
+    return {html, headings};
+}
+
+/**
+ * Получить отрендеренный HTML статьи и автоматически построенную
+ * навигацию по заголовкам h2/h3. Источник — только `article.md`.
+ */
+export function getArticleDetail(slug: string): {html: string; headings: ArticleHeading[]} {
+    const directory = path.join(ARTICLES_ROOT, slug);
+
+    if (!existsSync(path.join(directory, 'article.md'))) {
+        return {html: '', headings: []};
+    }
+
+    return renderArticle(resolveArticleMarkdown(directory, slug));
+}
+
+/**
  * Получить отрендеренный HTML-контент статьи по slug.
  * Относительные пути изображений внутри Markdown преобразуются в
  * абсолютные публичные URL.
  */
 export function getArticleContent(slug: string): string {
-    const directory = path.join(ARTICLES_ROOT, slug);
-
-    if (!existsSync(path.join(directory, 'article.md'))) {
-        return '';
-    }
-
-    let markdown = readMarkdown(directory);
-
-    // Подставляем абсолютные URL для относительных изображений в Markdown.
-    markdown = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt, rawSrc) => {
-        const resolved = resolveImageSrc(slug, rawSrc);
-        return `![${alt ?? ''}](${resolved})`;
-    });
-
-    return marked.parse(markdown, {async: false, gfm: true, breaks: false}) as string;
+    return getArticleDetail(slug).html;
 }
 
 /**

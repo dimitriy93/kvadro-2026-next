@@ -1,0 +1,243 @@
+@use "@/styles/_vars" as *;
+
+/* ==========================================================================
+   ARTICLE NAVIGATION («Содержание»)
+   ========================================================================== */
+
+/* По умолчанию — mobile/tablet: компактный сворачиваемый блок в потоке. */
+.article-nav {
+  --gold: #c9a962;
+  --border: rgba(255, 255, 255, 0.09);
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 860px;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--gold);
+
+  /* Заголовок используется на desktop; на mobile его заменяет toggle. */
+  &__head {
+    display: none;
+  }
+
+  &__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    padding: 18px 20px;
+    background: none;
+    border: none;
+    color: inherit;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  &__toggle-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    @include font-size(10, 12);
+    letter-spacing: 0.38em;
+    text-transform: uppercase;
+    color: var(--gold);
+    overflow-wrap: anywhere;
+  }
+
+  &__toggle-icon {
+    flex: none;
+    @include font-size(18, 20);
+    line-height: 1;
+    color: var(--gold);
+  }
+
+  /* Панель. На mobile/tablet в свёрнутом состоянии полностью убираем её
+     из layout (`display: none`), чтобы после заголовка не оставалось
+     пустого места. При раскрытии — снова в потоке. */
+  &__panel {
+    display: none;
+  }
+
+  &--expanded &__panel {
+    display: grid;
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 8px 20px 20px;
+    list-style: none;
+  }
+
+  &__item {
+    min-width: 0;
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 14px;
+    width: 100%;
+    min-width: 0;
+    padding: 7px 0;
+    @include font-size(13, 15);
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.62);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+    transition: color 0.25s ease,
+    opacity 0.25s ease,
+    transform 0.25s ease;
+
+    /* Короткая горизонтальная золотая черточка вместо точки. */
+    &::before {
+      content: '';
+      flex: none;
+      width: clamp(12px, 1vw, 16px);
+      height: 1px;
+      margin-top: 0.6em;
+      background: rgba(201, 169, 98, 0.55);
+      transition: width 0.25s ease,
+      background 0.25s ease,
+      opacity 0.25s ease;
+    }
+  }
+
+  &__link:hover {
+    color: #fff;
+
+    &::before {
+      width: clamp(16px, 1.4vw, 22px);
+      background: var(--gold);
+    }
+  }
+
+  &__link--active {
+    color: var(--gold);
+    transform: translateX(1px);
+
+    &::before {
+      width: clamp(24px, 2vw, 34px);
+      background: var(--gold);
+      opacity: 1;
+    }
+  }
+}
+
+/* Desktop: плавающая панель у правого края viewport. Показываем только там,
+   где реально хватает ширины, чтобы не перекрывать основной текст. */
+@media (min-width: 1800px) {
+  .article-nav {
+    /* Отступ сверху на desktop. Выносим в переменную, чтобы панель могла
+       рассчитывать свою высоту относительно этой точки. */
+    --nav-top: clamp(100px, 12vh, 140px);
+    /* Постоянный визуальный зазор между нижней границей панели и нижним
+       краем viewport — чтобы при маленькой высоте экрана панель «дышала»
+       и не прилипала к краю. */
+    --nav-bottom-gap: 48px;
+
+    position: fixed;
+    top: var(--nav-top);
+    right: clamp(16px, 3vw, 56px);
+    z-index: 10;
+    width: clamp(260px, 18vw, 320px);
+    max-width: calc(100vw - 48px);
+
+    opacity: 0;
+    transform: translateY(12px);
+    visibility: hidden;
+    transition: opacity 0.4s ease,
+    transform 0.4s ease,
+    visibility 0.4s;
+
+    /* Появление при достижении начала `.article-body`. */
+    &--visible {
+      opacity: 1;
+      transform: translateY(0);
+      visibility: visible;
+    }
+
+    &__head {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      padding: 24px 26px 0;
+    }
+
+    &__head-label {
+      @include font-size(10, 12);
+      letter-spacing: 0.42em;
+      text-transform: uppercase;
+      color: rgba(201, 169, 98, 0.85);
+    }
+
+    &__head-line {
+      width: 100%;
+      height: 1px;
+      margin-top: 16px;
+      background: linear-gradient(
+                      90deg,
+                      rgba(201, 169, 98, 0.55),
+                      rgba(255, 255, 255, 0.05)
+      );
+    }
+
+    /* На десктопе переключатель не нужен — список всегда раскрыт. */
+    &__toggle {
+      display: none;
+    }
+
+    &__panel {
+      display: block;
+      grid-template-rows: none;
+      /* Не даём панели выходить за нижний край viewport: высота ограничена
+         (100vh − отступ сверху − небольшой запас снизу). Прокрутка появляется
+         только тогда, когда список действительно выше доступной высоты. */
+      max-height: calc(100vh - var(--nav-top) - var(--nav-bottom-gap));
+      overflow-x: hidden;
+      overflow-y: auto;
+      opacity: 1;
+
+      /* Тонкий кастомный scrollbar — Firefox. */
+      scrollbar-width: thin;
+      scrollbar-color: rgba(201, 169, 98, 0.7) rgba(0, 0, 0, 0.3);
+
+      /* Тонкий кастомный scrollbar — Chromium/Safari. */
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: rgba(201, 169, 98, 0.7);
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb:hover {
+        background: rgba(201, 169, 98, 0.9);
+      }
+
+      > * {
+        overflow: visible;
+      }
+    }
+
+    &__list {
+      gap: 8px;
+      padding: 22px 26px 26px;
+    }
+  }
+}
