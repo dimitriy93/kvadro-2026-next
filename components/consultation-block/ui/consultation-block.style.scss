@@ -1,7 +1,7 @@
 .consultation-block {
   --accent: #ff5a00;
-  --glass: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .02));
-  --border: 1px solid rgba(255, 255, 255, .08);
+  --glass: linear-gradient(180deg, rgba(var(--ink-rgb), .06), rgba(var(--ink-rgb), .02));
+  --border: 1px solid rgba(var(--ink-rgb), .08);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -17,7 +17,7 @@
   }
 
   p {
-    color: rgba(255, 255, 255, .65);
+    color: rgba(var(--ink-rgb), .65);
     line-height: 1.7;
     margin-top: 24px;
   }
@@ -26,7 +26,7 @@
     position: relative;
     border-radius: 999px;
     background: var(--accent);
-    color: #fff;
+    color: var(--text-on-accent);
     font-weight: 600;
     text-decoration: none;
     transition: transform .75s ease, box-shadow .75s ease, filter .75s ease;

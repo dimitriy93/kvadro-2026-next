@@ -1,4 +1,5 @@
 import { Logo } from '@/components/logo';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import './header.styles.scss';
 import Link from 'next/link';
@@ -10,6 +11,7 @@ export const Header = () => (
         <Link href="/">
           <Logo />
         </Link>
+        <ThemeToggle />
       </div>
     </div>
 

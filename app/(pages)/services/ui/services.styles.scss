@@ -1,8 +1,8 @@
 .services {
   --accent: #ff5a00;
-  --glass: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .02));
+  --glass: linear-gradient(180deg, rgba(var(--ink-rgb), .06), rgba(var(--ink-rgb), .02));
   position: relative;
-  background: #0b0b0b;
+  background: var(--bg-page);
   padding: clamp(120px, 12vw, 180px) 0 120px;
   overflow: hidden;
 
@@ -42,7 +42,7 @@
 
 .services__description {
   max-width: 700px;
-  color: rgba(255, 255, 255, .65);
+  color: rgba(var(--ink-rgb), .65);
   line-height: 1.7;
 }
 
@@ -57,7 +57,7 @@
   flex-direction: column;
   padding: 34px;
   border-radius: 32px;
-  border: 1px solid rgba(255, 255, 255, .08);
+  border: 1px solid rgba(var(--ink-rgb), .08);
   background: var(--glass);
   backdrop-filter: blur(20px);
   transition: transform .35s, border-color .35s;
@@ -68,19 +68,19 @@
   }
 
   &__top span {
-    color: rgba(255, 255, 255, .45);
+    color: rgba(var(--ink-rgb), .45);
     font-size: 14px;
   }
 
   h2 {
     margin-top: 18px;
-    color: white;
+    color: rgb(var(--ink-rgb));
     font-size: 32px;
   }
 
   p {
     margin: 24px 0;
-    color: rgba(255, 255, 255, .65);
+    color: rgba(var(--ink-rgb), .65);
     line-height: 1.7;
   }
 
@@ -95,8 +95,8 @@
     li {
       padding: 8px 14px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, .06);
-      color: white;
+      background: rgba(var(--ink-rgb), .06);
+      color: rgb(var(--ink-rgb));
       font-size: 14px;
     }
   }
@@ -127,7 +127,7 @@
   gap: 40px;
   padding: 40px;
   border-radius: 32px;
-  border: 1px solid rgba(255, 255, 255, .08);
+  border: 1px solid rgba(var(--ink-rgb), .08);
   background: var(--glass);
   backdrop-filter: blur(20px);
 
@@ -136,7 +136,7 @@
   }
 
   p {
-    color: rgba(255, 255, 255, .65);
+    color: rgba(var(--ink-rgb), .65);
   }
 
   &__button {
@@ -145,7 +145,7 @@
     padding: 16px 22px;
     border-radius: 999px;
     background: var(--accent);
-    color: #fff;
+    color: var(--text-on-accent);
     font-weight: 600;
     text-decoration: none;
     transition: transform .75s ease, box-shadow .75s ease, filter .75s ease;
@@ -196,7 +196,7 @@
     gap: 24px;
 
     p {
-      color: rgba(255, 255, 255, .65);
+      color: rgba(var(--ink-rgb), .65);
       @include font-size(14, 17);
       line-height: 1.6;
       margin: 6px 0 0;
@@ -230,7 +230,7 @@
     h3 {
       @include font-size(18, 24);
       margin: 0;
-      color: #fff;
+      color: rgb(var(--ink-rgb));
       font-weight: 500;
       transition: opacity .25s ease;
     }

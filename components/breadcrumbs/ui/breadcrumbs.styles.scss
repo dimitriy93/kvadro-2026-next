@@ -75,6 +75,36 @@
     color: rgba(255, 255, 255, .25);
   }
 
+  /* Светлая тема: иерархия та же — ссылка приглушённая, разделитель ещё
+     тише, текущая страница основная. Акцентные золотые нюансы сохранены. */
+  [data-theme='light'] &__link {
+    color: rgba(var(--ink-rgb), .6);
+    border-color: rgba(var(--ink-rgb), .12);
+    background: rgba(var(--ink-rgb), .04);
+
+    &:hover,
+    &:focus-visible {
+      color: rgb(var(--ink-rgb));
+      border-color: rgba(201, 169, 98, .45);
+      background: rgba(201, 169, 98, .1);
+    }
+  }
+
+  [data-theme='light'] &__current {
+    color: rgb(var(--ink-rgb));
+    border-color: rgba(201, 169, 98, .4);
+    background: linear-gradient(
+                    180deg,
+                    rgba(201, 169, 98, .16),
+                    rgba(201, 169, 98, .06)
+    );
+    box-shadow: inset 0 0 20px rgba(201, 169, 98, .06);
+  }
+
+  [data-theme='light'] &__separator {
+    color: rgba(var(--ink-rgb), .35);
+  }
+
   @media (max-width: 768px) {
     &__list {
       gap: 6px;

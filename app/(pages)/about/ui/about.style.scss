@@ -1,8 +1,8 @@
 @use "@/styles/_vars" as *;
 
 .about {
-  --glass: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02));
-  background: #0b0b0b;
+  --glass: linear-gradient(180deg, rgba(var(--ink-rgb), .07), rgba(var(--ink-rgb), .02));
+  background: var(--bg-page);
   overflow: hidden;
 
   .container {
@@ -12,7 +12,7 @@
   }
 
   p {
-    color: rgba(255, 255, 255, .65);
+    color: rgba(var(--ink-rgb), .65);
     line-height: 1.7;
   }
 
@@ -66,7 +66,7 @@
 .about-card,
 .stat-card {
   border-radius: 32px;
-  border: 1px solid rgba(255, 255, 255, .08);
+  border: 1px solid rgba(var(--ink-rgb), .08);
   background: var(--glass);
   backdrop-filter: blur(20px);
   padding: 32px;
@@ -76,10 +76,10 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 24px;
-  color: #fff;
+  color: rgb(var(--ink-rgb));
 
   h3 {
-    color: #fff;
+    color: rgb(var(--ink-rgb));
   }
 }
 
@@ -128,7 +128,7 @@
     top: 0;
     bottom: 0;
     width: 2px;
-    background: rgba(255, 255, 255, .1);
+    background: rgba(var(--ink-rgb), .1);
 
     span {
       display: block;
@@ -165,11 +165,11 @@
 
   strong {
     font-size: 56px;
-    color: #fff;
+    color: rgb(var(--ink-rgb));
   }
 
   span {
-    color: rgba(255, 255, 255, .6);
+    color: rgba(var(--ink-rgb), .6);
   }
 }
 
@@ -199,7 +199,7 @@
   top: 0;
   bottom: 0;
   width: 2px;
-  background: rgba(255, 255, 255, .1);
+  background: rgba(var(--ink-rgb), .1);
   transform: translateX(-50%);
   overflow: hidden;
 }
@@ -221,7 +221,7 @@
   position: relative;
   border-radius: 32px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, .08);
+  border: 1px solid rgba(var(--ink-rgb), .08);
   background: var(--glass);
   backdrop-filter: blur(20px);
   padding: 12px;
@@ -378,7 +378,7 @@
     background: rgba(255, 255, 255, .08);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, .12);
-    color: white;
+    color: #fff;
 
     strong {
       font-size: 38px;
@@ -394,7 +394,7 @@
 
 .about-subtext {
   margin-top: 12px;
-  color: rgba(255, 255, 255, .6);
+  color: rgba(var(--ink-rgb), .6);
   max-width: 720px;
   line-height: 1.6;
 }
@@ -414,9 +414,9 @@
 .team-card {
   padding: 26px;
   border-radius: 22px;
-  background: rgba(255, 255, 255, .05);
-  border: 1px solid rgba(255, 255, 255, .08);
-  color: #fff;
+  background: rgba(var(--ink-rgb), .05);
+  border: 1px solid rgba(var(--ink-rgb), .08);
+  color: rgb(var(--ink-rgb));
   transition: transform .2s ease, border-color .2s ease;
 
   &:hover {
@@ -428,11 +428,11 @@
     display: block;
     font-size: 18px;
     margin-bottom: 10px;
-    color: #fff;
+    color: rgb(var(--ink-rgb));
   }
 
   p {
-    color: rgba(255, 255, 255, .65);
+    color: rgba(var(--ink-rgb), .65);
     line-height: 1.5;
   }
 }
@@ -449,7 +449,7 @@
 
   &__subtext {
     max-width: 720px;
-    color: rgba(255, 255, 255, .6);
+    color: rgba(var(--ink-rgb), .6);
     line-height: 1.6;
     @include font-size(15, 18);
   }
@@ -466,7 +466,7 @@
   display: flex;
   align-items: flex-start;
   gap: 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  border-bottom: 1px solid rgba(var(--ink-rgb), .08);
   transition: opacity .25s ease, transform .25s ease;
   padding: 14px 0;
 
@@ -488,7 +488,7 @@
     min-width: 48px;
     font-size: 13px;
     letter-spacing: 0.08em;
-    color: rgba(255, 255, 255, .35);
+    color: rgba(var(--ink-rgb), .35);
     transition: opacity .25s ease, transform .25s ease;
   }
 
@@ -503,7 +503,7 @@
     margin: 0;
     @include font-size(18, 24);
     font-weight: 500;
-    color: #fff;
+    color: rgb(var(--ink-rgb));
     line-height: 1.3;
   }
 
@@ -524,7 +524,7 @@
 
   &__subtext {
     @include font-size(15, 18);
-    color: rgba(255, 255, 255, .6);
+    color: rgba(var(--ink-rgb), .6);
     line-height: 1.6;
   }
 
@@ -570,12 +570,12 @@
       @include font-size(18, 24);
       margin: 0;
       font-weight: 500;
-      color: #fff;
+      color: rgb(var(--ink-rgb));
     }
 
     p {
       margin-top: 6px;
-      color: rgba(255, 255, 255, .6);
+      color: rgba(var(--ink-rgb), .6);
       line-height: 1.6;
       font-size: 14px;
     }
@@ -626,5 +626,25 @@
   }
   .direction-item__index {
     min-width: 34px;
+  }
+}
+
+/* Светлая тема. */
+[data-theme='light'] {
+  /* Туман рассчитан на тёмный фон — на светлом он выглядит грязным пятном. */
+  .timeline__fog {
+    display: none;
+  }
+
+  /* Стеклянная карточка поверх фото: белая полупрозрачная подложка и тёмные
+     «чернила» вместо белого текста; год остаётся акцентным. */
+  .timeline-item__glass {
+    background: rgba(255, 255, 255, .88);
+    border-color: rgba(var(--ink-rgb), .12);
+    color: rgb(var(--ink-rgb));
+
+    p {
+      color: rgba(var(--ink-rgb), .72);
+    }
   }
 }

@@ -25,6 +25,14 @@
     margin-top: 15px;
     @include glass-panel(12);
 
+    /* Логотип и переключатель темы в один ряд; сам логотип сохраняет
+       прежнюю ширину (300px — дефолтная ширина SVG). */
+    > .header__container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
     .logo {
       margin-bottom: 0;
       @include gap(8, 12);

@@ -1,4 +1,5 @@
 import mapImage from '@/app/_assets/images/common/map.webp';
+import mapImageInverted from '@/app/_assets/images/map_inverted.webp';
 import officeImage from '@/app/_assets/images/office_pic.webp';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -74,6 +75,12 @@ const ContactsPage = () => (
                         className="contacts-location__map"
                     >
                         <Image src={mapImage} alt="Карта проезда" fill className="contacts-location__image"/>
+                        <Image
+                            src={mapImageInverted}
+                            alt="Карта проезда"
+                            fill
+                            className="contacts-location__image contacts-location__image--inverted"
+                        />
                         <div className="contacts-location__content">
                             <strong>Мы на Яндекс Картах</strong>
                             <span>Построить маршрут →</span>

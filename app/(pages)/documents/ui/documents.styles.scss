@@ -1,14 +1,14 @@
 .documents {
   --accent: #ff5a00;
-  --border: 1px solid rgba(255, 255, 255, .08);
+  --border: 1px solid rgba(var(--ink-rgb), .08);
   --glass: linear-gradient(
                   180deg,
-                  rgba(255, 255, 255, .06),
-                  rgba(255, 255, 255, .02)
+                  rgba(var(--ink-rgb), .06),
+                  rgba(var(--ink-rgb), .02)
   );
   --success: #22c55e;
-  background: #0b0b0b;
-  --text-muted: rgba(255, 255, 255, .62);
+  background: var(--bg-page);
+  --text-muted: rgba(var(--ink-rgb), .62);
   overflow: hidden;
   padding: clamp(120px, 12vw, 180px) clamp(24px, 5vw, 80px) 120px;
   position: relative;
@@ -64,7 +64,7 @@
 }
 
 .documents-hero__image {
-  background: rgba(255, 255, 255, .03);
+  background: rgba(var(--ink-rgb), .03);
   border: var(--border);
   border-radius: 28px;
   box-shadow: 0 30px 90px rgba(0, 0, 0, .45);
@@ -90,7 +90,8 @@
 
 .documents-status {
   align-items: center;
-  color: white;
+  /* Статус живёт в тёмном бейдже поверх фото — текст всегда белый. */
+  color: #fff;
   display: flex;
   font-size: 13px;
   gap: 10px;
@@ -186,7 +187,7 @@
     }
 
     h3 {
-      color: #fff;
+      color: rgb(var(--ink-rgb));
       font-weight: 600;
       line-height: 1.25;
       @include font-size(22, 30);
@@ -200,7 +201,7 @@
     }
 
     a {
-      color: #fff;
+      color: rgb(var(--ink-rgb));
       font-weight: 600;
       margin-top: auto;
       padding-top: 16px;
@@ -252,8 +253,8 @@
   justify-content: center;
   border-radius: 16px;
   color: var(--accent);
-  background: rgba(255, 255, 255, .05);
-  border: 1px solid rgba(255, 255, 255, .1);
+  background: rgba(var(--ink-rgb), .05);
+  border: 1px solid rgba(var(--ink-rgb), .1);
   transition: .3s ease;
 
   .documents-card:hover & {
@@ -266,7 +267,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: rgba(255, 255, 255, .65);
+  color: rgba(var(--ink-rgb), .65);
   font-size: 13px;
   white-space: nowrap;
 
@@ -317,14 +318,14 @@
   }
 
   h3 {
-    color: #fff;
+    color: rgb(var(--ink-rgb));
     @include font-size(22, 30);
     line-height: 1.25;
     margin: 0 0 16px;
   }
 
   p {
-    color: rgba(255, 255, 255, .62);
+    color: rgba(var(--ink-rgb), .62);
     line-height: 1.7;
     margin: 0;
   }
@@ -332,7 +333,7 @@
   a {
     margin-top: auto;
     padding-top: 28px;
-    color: #fff;
+    color: rgb(var(--ink-rgb));
     font-weight: 600;
     text-decoration: none;
     transition: .25s ease;
@@ -370,7 +371,7 @@
   }
 
   h3 {
-    color: #fff;
+    color: rgb(var(--ink-rgb));
     font-weight: 600;
     margin: 0;
     @include font-size(18, 22);
@@ -394,7 +395,7 @@
     background: radial-gradient(
                     420px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
                     rgba(255, 90, 0, .16),
-                    rgba(255, 255, 255, .03) 25%,
+                    rgba(var(--ink-rgb), .03) 25%,
                     transparent 55%
     );
     content: "";
@@ -438,7 +439,7 @@
   align-items: center;
   background: var(--accent);
   border-radius: 999px;
-  color: #fff;
+  color: rgb(var(--ink-rgb));
   display: inline-flex;
   flex-shrink: 0;
   font-weight: 600;

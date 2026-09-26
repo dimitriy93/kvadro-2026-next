@@ -8,6 +8,10 @@
   position: relative;
   overflow: hidden;
   background: #0a0a0a;
+
+  [data-theme='light'] & {
+    background: var(--bg-page);
+  }
   @include padding-x(20, 100);
 
   &::before {
@@ -75,7 +79,7 @@
 
   &__info {
     @include glass-panel(40px);
-    color: #fff;
+    color: rgb(var(--ink-rgb));
     max-width: 600px;
     text-align: center;
     position: relative;

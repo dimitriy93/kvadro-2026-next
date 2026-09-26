@@ -2,11 +2,16 @@
 
 .btn {
   @include font-size(12, 14);
-  color: white;
+  color: rgb(var(--ink-rgb));
   cursor: pointer;
   transition: all .3s ease;
   @include padding-x(16, 28);
   @include padding-y(8, 14);
+}
+
+.btn-primary,
+.btn-primary-inverted {
+  color: var(--text-on-accent);
 }
 
 .btn-primary {
@@ -23,20 +28,20 @@
 
 .btn-secondary {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(var(--ink-rgb), 0.25);
 
   &:hover {
-    border-color: white;
-    background: rgba(255, 255, 255, 0.05);
+    border-color: rgb(var(--ink-rgb));
+    background: rgba(var(--ink-rgb), 0.05);
   }
 }
 
 .btn-primary-inverted {
   @include padding-x(18, 32);
   @include padding-y(14, 18);
-  border: 1px solid white;
+  border: 1px solid rgb(var(--ink-rgb));
   background: #0a0a0a;
-  color: white;
+  color: var(--text-on-accent);
   letter-spacing: .18em;
   text-transform: uppercase;
   cursor: pointer;
@@ -46,5 +51,24 @@
     border: 1px solid #ff4d00;
     background: #ff4d00;
     transform: translateY(-3px);
+  }
+}
+
+/* Светлая тема: вместо тяжёлой чёрной подложки — прозрачный фон, тёмная
+   рамка и тёмный текст; hover/active — акцент, как в тёмной теме. */
+[data-theme='light'] .btn-primary-inverted {
+  background: transparent;
+  border-color: rgba(var(--ink-rgb), .4);
+  color: rgb(var(--ink-rgb));
+
+  &:hover,
+  &:focus-visible {
+    border-color: #ff4d00;
+    background: #ff4d00;
+    color: var(--text-on-accent);
+  }
+
+  &:active {
+    background: #e64500;
   }
 }

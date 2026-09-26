@@ -1,0 +1,49 @@
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  margin-left: auto;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(var(--ink-rgb), .15);
+  background: rgba(var(--ink-rgb), .06);
+  color: rgb(var(--ink-rgb));
+  cursor: pointer;
+  transition: border-color .25s ease, color .25s ease, background .25s ease, transform .25s ease;
+
+  &:hover {
+    border-color: #ff4d00;
+    color: #ff4d00;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ff4d00;
+    outline-offset: 2px;
+  }
+}
+
+.theme-toggle__icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Светлая тема — показываем солнце. Атрибут data-theme выставляется на <html>. */
+.theme-toggle__icon--sun {
+  display: none;
+}
+
+[data-theme='light'] .theme-toggle__icon--sun {
+  display: block;
+}
+
+[data-theme='light'] .theme-toggle__icon--moon {
+  display: none;
+}

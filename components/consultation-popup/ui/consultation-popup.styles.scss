@@ -24,12 +24,12 @@
 
     h2 {
       margin: 16px 0 10px;
-      color: #fff;
+      color: rgb(var(--ink-rgb));
       font-size: 32px;
     }
 
     p {
-      color: rgba(255, 255, 255, .6);
+      color: rgba(var(--ink-rgb), .6);
     }
   }
 }
@@ -45,7 +45,7 @@
     gap: 8px;
 
     span {
-      color: rgba(255, 255, 255, .55);
+      color: rgba(var(--ink-rgb), .55);
       font-size: 13px;
     }
   }
@@ -56,9 +56,9 @@
     width: 100%;
     padding: 14px 16px;
     border-radius: 16px;
-    color: #fff;
-    background: rgba(255, 255, 255, .06);
-    border: 1px solid rgba(255, 255, 255, .1);
+    color: rgb(var(--ink-rgb));
+    background: rgba(var(--ink-rgb), .06);
+    border: 1px solid rgba(var(--ink-rgb), .1);
     outline: none;
     transition: .25s;
 
@@ -78,7 +78,7 @@
     border-radius: 999px;
     border: 0;
     background: #ff5a00;
-    color: white;
+    color: var(--text-on-accent);
     font-weight: 600;
     cursor: pointer;
     transition: .25s;
@@ -90,7 +90,7 @@
   }
 
   small {
-    color: rgba(255, 255, 255, .35);
+    color: rgba(var(--ink-rgb), .35);
     line-height: 1.5;
   }
 
@@ -111,9 +111,9 @@
     align-items: center;
     padding: 15px 18px;
     border-radius: 16px;
-    background: rgba(8, 8, 8, .85);
+    background: var(--bg-control);
     border: 1px solid rgba(255, 90, 0, .55);
-    color: #fff;
+    color: rgb(var(--ink-rgb));
     cursor: pointer;
     transition: border-color .25s ease, box-shadow .25s ease, background .25s ease;
 
@@ -123,7 +123,7 @@
     }
 
     span {
-      color: rgba(255, 255, 255, .85);
+      color: rgba(var(--ink-rgb), .85);
     }
 
     i {
@@ -131,7 +131,7 @@
       height: 0;
       border-left: 5px solid transparent;
       border-right: 5px solid transparent;
-      border-top: 7px solid #fff;
+      border-top: 7px solid rgb(var(--ink-rgb));
       opacity: .8;
       transition: transform .25s ease;
 
@@ -151,7 +151,7 @@
     padding: 8px;
     list-style: none;
     border-radius: 20px;
-    background: rgba(15, 15, 15, .96);
+    background: var(--bg-popup);
     border: 1px solid rgba(255, 90, 0, .25);
     box-shadow: 0 20px 60px rgba(0, 0, 0, .45);
     backdrop-filter: blur(20px);
@@ -160,7 +160,7 @@
     li {
       padding: 12px 14px;
       border-radius: 12px;
-      color: rgba(255, 255, 255, .75);
+      color: rgba(var(--ink-rgb), .75);
       cursor: pointer;
       transition: background .2s ease,
       transform .2s ease,
@@ -168,7 +168,7 @@
 
       &:hover {
         background: rgba(255, 90, 0, .16);
-        color: #fff;
+        color: rgb(var(--ink-rgb));
         transform: translateX(4px);
       }
 
@@ -216,14 +216,14 @@
 
   &__title {
     margin: 4px 0 0;
-    color: #fff;
+    color: rgb(var(--ink-rgb));
     font-size: 24px;
     font-weight: 700;
   }
 
   &__text {
     margin: 0;
-    color: rgba(255, 255, 255, .65);
+    color: rgba(var(--ink-rgb), .65);
     font-size: 15px;
     line-height: 1.6;
   }
@@ -234,7 +234,7 @@
     border-radius: 999px;
     border: 0;
     background: #ff5a00;
-    color: #fff;
+    color: var(--text-on-accent);
     font-weight: 600;
     cursor: pointer;
     transition: .25s;

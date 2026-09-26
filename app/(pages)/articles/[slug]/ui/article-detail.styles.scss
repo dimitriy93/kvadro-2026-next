@@ -1,10 +1,10 @@
 .article-page {
   --gold: #c9a962;
   --gold-bright: #e1c57c;
-  --border: rgba(255, 255, 255, 0.09);
-  --border-light: rgba(255, 255, 255, 0.14);
-  --text: rgba(255, 255, 255, 0.88);
-  --text-muted: rgba(255, 255, 255, 0.58);
+  --border: rgba(var(--ink-rgb), 0.09);
+  --border-light: rgba(var(--ink-rgb), 0.14);
+  --text: rgba(var(--ink-rgb), 0.88);
+  --text-muted: rgba(var(--ink-rgb), 0.58);
   position: relative;
   min-height: 100%;
   overflow: hidden;
@@ -13,7 +13,7 @@
                   rgba(201, 169, 98, 0.055),
                   transparent 32%
   ),
-  #0b0b0b;
+  var(--bg-page);
 
   &::before {
     content: '';
@@ -99,7 +99,7 @@
     width: 100%;
     height: 1px;
     margin-top: 22px;
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(var(--ink-rgb), 0.08);
 
     &::after {
       content: '';
@@ -120,7 +120,7 @@
     line-height: 1.02;
     letter-spacing: -0.045em;
     font-weight: 500;
-    color: #fff;
+    color: rgb(var(--ink-rgb));
     text-wrap: balance;
     overflow-wrap: anywhere;
   }
@@ -173,7 +173,7 @@
     border: 1px solid var(--border-light);
     background: #101010;
     box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45),
-    0 0 0 1px rgba(255, 255, 255, 0.015);
+    0 0 0 1px rgba(var(--ink-rgb), 0.015);
     clip-path: polygon(
                     0 0,
                     calc(100% - 24px) 0,
@@ -269,7 +269,7 @@
     @include font-size(8, 10);
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.55);
+    color: rgba(var(--ink-rgb), 0.55);
 
     span:last-child {
       color: var(--gold);
@@ -319,7 +319,7 @@
     @include font-size(9, 10);
     letter-spacing: 0.24em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(var(--ink-rgb), 0.3);
   }
 }
 
@@ -352,7 +352,7 @@
   h5,
   h6 {
     margin: 22px 0 0;
-    color: #fff;
+    color: rgb(var(--ink-rgb));
     font-weight: 500;
     letter-spacing: -0.025em;
     line-height: 1.18;
@@ -460,7 +460,7 @@
     }
 
     p {
-      color: rgba(255, 255, 255, 0.9);
+      color: rgba(var(--ink-rgb), 0.9);
       font-style: italic;
     }
   }
@@ -480,7 +480,7 @@
   }
 
   strong {
-    color: #fff;
+    color: rgb(var(--ink-rgb));
     font-weight: 600;
   }
 
@@ -496,7 +496,7 @@
     background: linear-gradient(
                     90deg,
                     var(--gold),
-                    rgba(255, 255, 255, 0.08) 30%,
+                    rgba(var(--ink-rgb), 0.08) 30%,
                     transparent
     );
   }
@@ -505,8 +505,8 @@
     padding: 2px 6px;
     border: 1px solid var(--border);
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.06);
-    color: #fff;
+    background: rgba(var(--ink-rgb), 0.06);
+    color: rgb(var(--ink-rgb));
     font-family: 'SFMono-Regular',
     Consolas,
     'Liberation Mono',
@@ -561,9 +561,9 @@
     }
 
     th {
-      color: #fff;
+      color: rgb(var(--ink-rgb));
       font-weight: 600;
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(var(--ink-rgb), 0.04);
     }
   }
 }

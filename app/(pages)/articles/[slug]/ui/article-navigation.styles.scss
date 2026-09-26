@@ -7,14 +7,14 @@
 /* По умолчанию — mobile/tablet: компактный сворачиваемый блок в потоке. */
 .article-nav {
   --gold: #c9a962;
-  --border: rgba(255, 255, 255, 0.09);
+  --border: rgba(var(--ink-rgb), 0.09);
 
   display: flex;
   flex-direction: column;
   width: 100%;
   max-width: 860px;
   min-width: 0;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(var(--ink-rgb), 0.02);
   border: 1px solid var(--border);
   border-left: 2px solid var(--gold);
 
@@ -91,7 +91,7 @@
     padding: 7px 0;
     @include font-size(13, 15);
     line-height: 1.5;
-    color: rgba(255, 255, 255, 0.62);
+    color: rgba(var(--ink-rgb), 0.62);
     text-decoration: none;
     overflow-wrap: anywhere;
     transition: color 0.25s ease,
@@ -113,7 +113,7 @@
   }
 
   &__link:hover {
-    color: #fff;
+    color: rgb(var(--ink-rgb));
 
     &::before {
       width: clamp(16px, 1.4vw, 22px);
@@ -187,7 +187,7 @@
       background: linear-gradient(
                       90deg,
                       rgba(201, 169, 98, 0.55),
-                      rgba(255, 255, 255, 0.05)
+                      rgba(var(--ink-rgb), 0.05)
       );
     }
 

@@ -5,10 +5,10 @@
    ========================================================================== */
 .articles {
   --gold: #c9a962;
-  --border: rgba(255, 255, 255, 0.08);
-  --text-muted: rgba(255, 255, 255, 0.62);
+  --border: rgba(var(--ink-rgb), 0.08);
+  --text-muted: rgba(var(--ink-rgb), 0.62);
   position: relative;
-  background: #0b0b0b;
+  background: var(--bg-page);
   overflow: hidden;
 
   .articles__container {
@@ -54,7 +54,7 @@
     font-weight: 600;
     line-height: 1.04;
     letter-spacing: -0.03em;
-    color: #fff;
+    color: rgb(var(--ink-rgb));
     text-wrap: balance;
     overflow-wrap: anywhere;
   }
@@ -80,7 +80,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, rgba(11, 11, 11, 0) 55%, #0b0b0b 100%);
+      background: linear-gradient(180deg, rgba(var(--bg-page-rgb), 0) 55%, var(--bg-page) 100%);
       pointer-events: none;
     }
   }
@@ -105,7 +105,7 @@
     line-height: 1.2;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.38);
+    color: rgba(var(--ink-rgb), 0.38);
   }
 
   &__list {
@@ -138,7 +138,7 @@
     font-family: inherit;
     @include font-size(13, 15);
     letter-spacing: 0.02em;
-    color: rgba(255, 255, 255, 0.55);
+    color: rgba(var(--ink-rgb), 0.55);
     transition: color 0.25s ease;
     text-align: left;
 
@@ -156,11 +156,11 @@
     }
 
     &:hover {
-      color: #fff;
+      color: rgb(var(--ink-rgb));
     }
 
     &.is-active {
-      color: #fff;
+      color: rgb(var(--ink-rgb));
       font-weight: 500;
 
       &::after {
@@ -211,7 +211,7 @@
     font-weight: 600;
     line-height: 1.14;
     letter-spacing: -0.02em;
-    color: #fff;
+    color: rgb(var(--ink-rgb));
     text-wrap: balance;
     overflow-wrap: anywhere;
     transition: color 0.3s ease;
@@ -245,7 +245,7 @@
   flex-wrap: wrap;
   gap: 10px;
   @include font-size(12, 13);
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(var(--ink-rgb), 0.45);
 
   &__dot {
     color: var(--gold);
@@ -259,11 +259,11 @@
   gap: 10px;
   margin-top: 4px;
   padding-bottom: 3px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.2);
   @include font-size(13, 14);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #fff;
+  color: rgb(var(--ink-rgb));
   transition: color 0.25s ease,
   border-color 0.25s ease,
   gap 0.25s ease;
@@ -320,7 +320,7 @@
     @include font-size(12, 13);
     font-weight: 500;
     letter-spacing: 0.06em;
-    color: rgba(255, 255, 255, 0.32);
+    color: rgba(var(--ink-rgb), 0.32);
     transition: color 0.3s ease;
   }
 
@@ -353,7 +353,7 @@
     font-weight: 600;
     line-height: 1.28;
     letter-spacing: -0.015em;
-    color: #fff;
+    color: rgb(var(--ink-rgb));
     transition: color 0.3s ease;
     text-wrap: balance;
     overflow-wrap: anywhere;
@@ -372,7 +372,7 @@
   }
 
   &__arrow {
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(var(--ink-rgb), 0.3);
     transform: translateX(-6px);
     opacity: 0;
     transition: color 0.3s ease,
