@@ -1,0 +1,83 @@
+/* Страница карты объекта — заглушка с декоративной схемой. */
+
+.obj-map__panel {
+  position: relative;
+  min-height: clamp(280px, 45vw, 420px);
+  border: 1px solid rgba(var(--ink-rgb), 0.1);
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(var(--ink-rgb), 0.02);
+  display: grid;
+  place-items: center;
+}
+
+.obj-map__plan {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.obj-map__grid {
+  stroke: rgba(var(--ink-rgb), 0.05);
+}
+
+.obj-map__wall {
+  fill: none;
+  stroke: rgba(var(--ink-rgb), 0.22);
+  stroke-width: 2;
+}
+
+.obj-map__door {
+  stroke: var(--bg-page);
+  stroke-width: 4;
+}
+
+.obj-map__point {
+  fill: #ff5a00;
+  opacity: 0.75;
+}
+
+.obj-map__overlay {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  max-width: min(420px, calc(100% - 32px));
+  padding: 22px 26px;
+  border: 1px solid rgba(var(--ink-rgb), 0.12);
+  border-radius: 14px;
+  background: var(--bg-panel);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
+}
+
+.obj-map__icon {
+  width: 30px;
+  height: 30px;
+  color: #c9a962;
+}
+
+.obj-map__overlay-title {
+  margin: 0;
+  @include font-size(16, 19);
+  font-weight: 600;
+  color: rgb(var(--ink-rgb));
+}
+
+.obj-map__overlay-text {
+  margin: 0;
+  @include font-size(13, 15);
+  color: rgba(var(--ink-rgb), 0.75);
+  overflow-wrap: anywhere;
+}
+
+.obj-map__overlay-note {
+  margin: 4px 0 0;
+  @include font-size(11, 12);
+  color: rgba(var(--ink-rgb), 0.5);
+  line-height: 1.6;
+}

@@ -1,0 +1,240 @@
+/*
+ * Оболочка личного кабинета. Все правила prefixed `.acc` и не пересекаются
+ * с публичными стилями. Токены темы — styles/_theme.scss.
+ */
+
+.acc {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-page);
+}
+
+.acc__glow {
+  position: absolute;
+  top: -220px;
+  left: -220px;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  background: #ff5a00;
+  opacity: 0.06;
+  filter: blur(180px);
+  pointer-events: none;
+}
+
+.acc-header {
+  position: relative;
+  z-index: 1;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.08);
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.acc-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.acc-header__left {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 3vw, 32px);
+  min-width: 0;
+}
+
+.acc-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.acc-header__nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  @include font-size(13, 14);
+  color: rgba(var(--ink-rgb), 0.75);
+  text-decoration: none;
+  transition: color 0.2s ease, background 0.2s ease;
+
+  &:hover {
+    color: rgb(var(--ink-rgb));
+    background: rgba(var(--ink-rgb), 0.06);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ff5a00;
+    outline-offset: 2px;
+  }
+}
+
+.acc-header__logo {
+  display: inline-flex;
+  align-items: center;
+  max-width: 240px;
+  min-width: 0;
+
+  .logo {
+    width: 100%;
+    height: auto;
+  }
+}
+
+.acc-header__right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.acc-header__user {
+  @include font-size(12, 14);
+  color: rgba(var(--ink-rgb), 0.75);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Полноценная кнопка выхода: заметная рамка, собственные hover/focus/disabled
+   и достаточная область нажатия. Локальные стили кабинета, глобальная
+   .btn-secondary публичного сайта не затрагивается. */
+.acc-header__logout {
+  flex-shrink: 0;
+  min-height: 40px;
+  @include font-size(12, 13);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  background: rgba(var(--ink-rgb), 0.04);
+
+  &:hover {
+    border-color: rgba(var(--ink-rgb), 0.55);
+    background: rgba(var(--ink-rgb), 0.08);
+    color: rgb(var(--ink-rgb));
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ff5a00;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+/* Общая плашка «демонстрационные данные» для всех страниц кабинета. */
+.acc-demo-note {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  @include font-size(10, 11);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c9a962;
+  border: 1px solid rgba(201, 169, 98, 0.35);
+  border-radius: 999px;
+  padding: 6px 12px;
+  white-space: nowrap;
+}
+
+/* Страница «объект не найден / недоступен» внутри оболочки кабинета. */
+.acc-notfound {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: clamp(24px, 4vw, 48px);
+  border: 1px solid rgba(var(--ink-rgb), 0.08);
+  border-radius: 18px;
+  background: rgba(var(--ink-rgb), 0.03);
+}
+
+.acc-notfound__title {
+  margin: 0;
+  @include font-size(20, 26);
+  font-weight: 600;
+  color: rgb(var(--ink-rgb));
+}
+
+.acc-notfound__text {
+  margin: 0;
+  @include font-size(14, 15);
+  color: rgba(var(--ink-rgb), 0.62);
+  line-height: 1.6;
+}
+
+.acc-notfound__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  background: #ff4d00;
+  color: var(--text-on-accent);
+  @include font-size(13, 14);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    background: #ff6a2c;
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ff5a00;
+    outline-offset: 2px;
+  }
+}
+
+/* Явные отступы: перекрывают глобальное правило `main` из styles/pages.scss,
+   которое может быть загружено при клиентском переходе с публичных страниц. */
+.acc-main {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  width: 100%;
+  padding-top: clamp(28px, 4vw, 48px);
+  padding-bottom: 64px;
+}
+
+.acc-footer {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  border-top: 1px solid rgba(var(--ink-rgb), 0.06);
+}
+
+.acc-footer__inner {
+  @include font-size(11, 12);
+  color: rgba(var(--ink-rgb), 0.45);
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+@media (max-width: 640px) {
+  .acc-header__user {
+    display: none;
+  }
+
+  .acc-header__logo {
+    max-width: 150px;
+  }
+
+  .acc-header__nav-link {
+    padding: 0 8px;
+  }
+}

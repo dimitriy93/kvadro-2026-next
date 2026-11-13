@@ -1,5 +1,6 @@
 'use client';
 import {useState} from 'react';
+import {usePathname} from 'next/navigation';
 import {Button} from '@/components/button';
 import {contacts} from '@/config/brand/contacts';
 import {floatingMenu} from '@/config/navigation/menu';
@@ -7,6 +8,13 @@ import './floating-menu.styles.scss';
 
 export const FloatingMenu = () => {
     const [menuOpen, setMenuOpen] = useState<boolean>(false);
+    const pathname = usePathname();
+
+    // Личный кабинет имеет собственную навигационную оболочку,
+    // публичное плавающее меню там не нужно.
+    if (pathname?.startsWith('/cabinet')) {
+        return null;
+    }
     const activeClass = menuOpen ? 'active' : '';
 
     const toggleMenu = () => {

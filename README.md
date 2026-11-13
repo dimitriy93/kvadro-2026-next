@@ -1,166 +1,61 @@
-# Scroll Hooks
+# Сайт «Квадро-Арсенал» (kvadro-2026-next)
 
-Набор хуков для scroll-driven интерфейсов в React / Next.js.
+Корпоративный сайт проектно-монтажной организации «Квадро-Арсенал» (г. Электросталь) и личный кабинет клиента мониторинговых услуг.
 
-Используется для:
-- timeline
-- parallax
-- reveal-анимаций
-- интерактивных секций
+- **Публичная часть**: лендинг, страницы услуг, блог со статьями из репозитория, документы, контакты, заявки в Telegram с защитой Cloudflare Turnstile.
+- **Личный кабинет** (`/cabinet`): просмотр клиентом состояния своих объектов мониторинга — прототип на демонстрационных данных; целевая интеграция — REST API GEORITM (план в `GEO RITM/`).
 
-Хуки работают через `RefObject`, безопасны для SSR и не зависят от сторонних scroll-библиотек.
+## Технологии
 
----
+| Слой | Технология |
+|---|---|
+| Фреймворк | Next.js 16.2.3 (App Router, Turbopack), React 19 |
+| Язык | TypeScript 6 |
+| Стили | SCSS (Sass 1.99), семантические токены тем, fluid-типографика |
+| Контент | Markdown-статьи из `content/articles/` (marked), медиа через route handlers |
+| Анимации | framer-motion / motion |
+| Инфраструктура | Amvera (Node 20, `amvera.yml`) |
 
-## useScrollProgress
+## Требования к окружению
 
-Возвращает прогресс прокрутки элемента:
+- Node.js 20+ (разработка ведётся на v24), npm 10+
+- Переменные окружения в `.env.local` (см. [docs/development/04-local-development.md](./docs/development/04-local-development.md)):
+  `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `ACCOUNT_SESSION_SECRET` (для production-кабинета).
 
-```
-0 → 1
-```
+## Быстрый запуск
 
-Используется для:
-- заполнения линий таймлайна
-- step-анимаций
-- состояния секций
-
-### API
-
-```ts
-const progress = useScrollProgress(
-    elementRef,
-    triggerRatio?
-);
+```bash
+npm install
+npm run dev        # http://localhost:3000
+npm run build      # production-сборка
+npm run start      # запуск production-сборки
+npx tsc --noEmit   # проверка типов
 ```
 
-Параметры:
+Кабинет: `http://localhost:3000/cabinet` — в dev-режиме на странице входа видны тестовые учётные записи; в production демо-вход отключён.
 
-| Параметр | Описание |
-|-|-|
-| elementRef | Ref элемента |
-| triggerRatio | Позиция активации в viewport |
+## Карта возможностей
 
----
+| Раздел | URL | Код |
+|---|---|---|
+| Лендинг | `/` | `app/page.tsx`, `app/landing-content.tsx`, `widgets/` |
+| Услуги (7 страниц) | `/services/...` | `app/(pages)/services/` |
+| Статьи | `/articles`, `/articles/<slug>` | `app/(pages)/articles/`, `content/articles/`, `lib/articles/` |
+| Документы / Контакты | `/documents`, `/contacts` | `app/(pages)/...` |
+| Заявки (Telegram + Turnstile) | — | `app/api/telegram/`, `lib/telegram.ts` |
+| Кабинет: вход, объекты, события, карта | `/cabinet/...` | `app/(cabinet)/`, `app/(cabinet-login)/`, `lib/account/` |
+| API кабинета | `/api/cabinet/...` | `app/api/cabinet/` |
+| Редиректы старых URL `/account` → `/cabinet` | — | `proxy.ts` |
 
-### Пример
+## Документация
 
-```tsx
-const sectionRef = useRef<HTMLDivElement>(null);
+Полная документация для разработчиков — в [docs/development/README.md](./docs/development/README.md):
 
-const progress = useScrollProgress(
-    sectionRef,
-    0.6
-);
+- обзор проекта и структура репозитория;
+- локальная разработка и деплой на Amvera;
+- инструкция добавления статей;
+- руководство по личному кабинету (авторизация, доступ, демо-данные);
+- интеграция GEORITM (что готово / что в плане);
+- диагностика типовых проблем.
 
-return (
-    <section ref={sectionRef}>
-
-        <div
-            style={{
-                height: `${progress * 100}%`
-            }}
-        />
-
-    </section>
-);
-```
-
----
-
-# useScrollMotion
-
-Возвращает физические параметры движения элемента:
-
-```ts
-{
-    offset,
-    velocity
-}
-```
-
-Используется для:
-- параллакса
-- движения фоновых элементов
-- реакций на скорость скролла
-
-
-### API
-
-```ts
-const {
-    offset,
-    velocity
-} = useScrollMotion(elementRef);
-```
-
----
-
-### Пример параллакса
-
-```tsx
-const imageRef = useRef<HTMLDivElement>(null);
-
-const { offset } =
-    useScrollMotion(imageRef);
-
-
-<div
-    ref={imageRef}
-    style={{
-        transform:
-          `translateY(${offset * 0.2}px)`
-    }}
-/>
-```
-
----
-
-# useScrollProgress vs useScrollMotion
-
-| Задача | Хук |
-|-|-|
-| Таймлайн | useScrollProgress |
-| Индикатор прогресса | useScrollProgress |
-| Появление блоков | useScrollProgress |
-| Параллакс | useScrollMotion |
-| Движение элементов | useScrollMotion |
-| Реакция на скорость | useScrollMotion |
-
----
-
-# Архитектура
-
-Хуки разделяют две задачи:
-
-### useScrollProgress
-
-Логика состояния:
-
-```
-0 ---------------- 1
-```
-
-Пример:
-"секция пройдена на 70%"
-
-
-### useScrollMotion
-
-Физика движения:
-
-```
-position + velocity
-```
-
-Пример:
-"элемент движется быстрее/медленнее при скролле"
-
----
-
-# Особенности
-
-- SSR safe для Next.js
-- очистка listeners при размонтировании
-- можно использовать несколько раз на странице
-- не требует GSAP или дополнительных scroll-библиотек
+Документация по scroll-хукам — [docs/development/hooks-scroll.md](./docs/development/hooks-scroll.md).

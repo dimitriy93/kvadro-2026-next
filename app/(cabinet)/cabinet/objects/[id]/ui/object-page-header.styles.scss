@@ -1,0 +1,93 @@
+/* Заголовок страницы объекта: возврат, название, адрес, вкладки. */
+
+.obj-header {
+  margin-bottom: clamp(20px, 3vw, 32px);
+}
+
+.obj-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  @include font-size(12, 13);
+  color: rgba(var(--ink-rgb), 0.6);
+  text-decoration: none;
+  margin-bottom: 10px;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #ff5a00;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ff5a00;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
+.obj-header__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.obj-header__title {
+  margin: 6px 0 0;
+  @include font-size(22, 30);
+  font-weight: 600;
+  color: rgb(var(--ink-rgb));
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.obj-header__address {
+  margin: 8px 0 0;
+  @include font-size(13, 15);
+  color: rgba(var(--ink-rgb), 0.6);
+  overflow-wrap: anywhere;
+}
+
+.obj-tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 18px;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.08);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.obj-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 0 16px;
+  border-bottom: 2px solid transparent;
+  @include font-size(13, 14);
+  color: rgba(var(--ink-rgb), 0.65);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    color: rgb(var(--ink-rgb));
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ff5a00;
+    outline-offset: -2px;
+    border-radius: 6px 6px 0 0;
+  }
+}
+
+.obj-tabs__tab--active {
+  color: #ff5a00;
+  border-bottom-color: #ff5a00;
+  font-weight: 500;
+
+  &:hover {
+    color: #ff6a2c;
+  }
+}

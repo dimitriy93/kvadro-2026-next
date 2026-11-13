@@ -1,0 +1,32 @@
+@use './state-tones';
+
+/* Индикаторы состояния систем объекта на страницах кабинета. */
+
+.acc-state {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  @include font-size(12, 13);
+}
+
+.acc-state__dot {
+  flex-shrink: 0;
+  align-self: center;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--acc-state-color, rgba(var(--ink-rgb), 0.4));
+  box-shadow: 0 0 10px var(--acc-state-color, rgba(var(--ink-rgb), 0.4));
+}
+
+.acc-state__name {
+  flex-shrink: 0;
+  color: rgba(var(--ink-rgb), 0.55);
+}
+
+.acc-state__value {
+  color: rgb(var(--ink-rgb));
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}

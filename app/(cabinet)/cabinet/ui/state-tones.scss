@@ -1,0 +1,12 @@
+/*
+ * Цветовые тона состояний/событий кабинета. Общий партиал: подключается
+ * и индикаторами состояний, и журналом событий. Значение задаётся через
+ * CSS-переменную --acc-state-color, цвет виден и в светлой, и в тёмной теме.
+ */
+
+.acc-state--ok { --acc-state-color: #10b981; }
+.acc-state--warn { --acc-state-color: #f59e0b; }
+.acc-state--danger { --acc-state-color: #ef4444; }
+.acc-state--accent { --acc-state-color: #ff5a00; }
+.acc-state--info { --acc-state-color: #3b82f6; }
+.acc-state--neutral { --acc-state-color: rgba(var(--ink-rgb), 0.45); }

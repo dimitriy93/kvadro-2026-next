@@ -1,0 +1,134 @@
+/* Главная страница кабинета: обзор объектов пользователя. */
+
+.acc-overview__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: clamp(24px, 3vw, 40px);
+}
+
+.acc-overview__title {
+  margin: 6px 0 0;
+  @include font-size(24, 34);
+  font-weight: 600;
+  color: rgb(var(--ink-rgb));
+}
+
+.acc-overview__subtitle {
+  margin: 8px 0 0;
+  @include font-size(13, 15);
+  color: rgba(var(--ink-rgb), 0.6);
+}
+
+.acc-overview__grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: clamp(14px, 2vw, 20px);
+}
+
+/* Карточка — ссылка на страницу состояния объекта. */
+a.acc-overview__card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  box-sizing: border-box;
+  padding: clamp(20px, 2.5vw, 28px);
+  border: 1px solid rgba(var(--ink-rgb), 0.08);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(var(--ink-rgb), 0.05), rgba(var(--ink-rgb), 0.02));
+  text-decoration: none;
+  transition: transform 0.25s ease, border-color 0.25s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    border-color: rgba(var(--ink-rgb), 0.18);
+
+    .acc-overview__card-open {
+      color: #ff5a00;
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ff5a00;
+    outline-offset: 2px;
+  }
+}
+
+.acc-overview__card-open {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid rgba(var(--ink-rgb), 0.06);
+  @include font-size(12, 13);
+  color: rgba(var(--ink-rgb), 0.55);
+  transition: color 0.2s ease;
+}
+
+.acc-overview__card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.acc-overview__card-title {
+  margin: 0;
+  @include font-size(17, 20);
+  font-weight: 600;
+  color: rgb(var(--ink-rgb));
+  line-height: 1.25;
+}
+
+.acc-overview__card-id {
+  flex-shrink: 0;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  @include font-size(10, 11);
+  color: rgba(var(--ink-rgb), 0.4);
+}
+
+.acc-overview__card-address {
+  margin: 0;
+  @include font-size(13, 14);
+  color: rgba(var(--ink-rgb), 0.62);
+  line-height: 1.5;
+}
+
+.acc-overview__states {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.acc-overview__card-updated {
+  margin: auto 0 0;
+  padding-top: 12px;
+  border-top: 1px solid rgba(var(--ink-rgb), 0.06);
+  @include font-size(11, 12);
+  color: rgba(var(--ink-rgb), 0.45);
+}
+
+.acc-overview__empty {
+  @include font-size(14, 15);
+  color: rgba(var(--ink-rgb), 0.6);
+}
+
+@media (max-width: 640px) {
+  .acc-overview__head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .acc-overview__grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { footerMenu, servicesMenu } from '@/config/navigation/menu';
 import { contacts } from '@/config/brand/contacts';
 import { routes } from '@/config/routes/main.routes';
-import { account } from '@/config/routes/account.routes';
+import { cabinet } from '@/config/routes/cabinet.routes';
 import './footer.styles.scss';
 
 export const Footer = () => (
@@ -49,8 +49,8 @@ export const Footer = () => (
 
           <div className="footer__row">
             <span className="footer__title">Для клиентов</span>
-            <Link href={account.href} className="link">
-              {account.title}
+            <Link href={cabinet.href} className="link">
+              {cabinet.title}
             </Link>
           </div>
         </nav>

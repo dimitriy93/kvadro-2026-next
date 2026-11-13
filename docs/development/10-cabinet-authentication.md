@@ -1,0 +1,85 @@
+# 10. Личный кабинет: авторизация и безопасность
+
+Все утверждения ниже проверены по коду (`lib/account/session.ts`, `app/api/cabinet/*`, `app/(cabinet)/cabinet/layout.tsx`) и фактически тестами HTTP + браузера.
+
+## Схема входа (от формы до защищённой страницы)
+
+```text
+Браузер                                  Сервер
+────────                                 ──────
+/cabinet/login  ◄──── 200 ─────────────  app/(cabinet-login)/cabinet/login/page.tsx
+     │                                   (в dev передаёт demoHints, в prod — [])
+     │  fetch POST /api/cabinet/login    app/api/cabinet/login/route.ts
+     │  {login, password}     ────────►  1. isDemoLoginEnabled() && secret? иначе 503
+     │                                   2. verifyDemoCredentials() — SHA-256+timingSafeEqual
+     │                                   3. createSessionToken(user.id)
+     │  200 + Set-Cookie      ◄────────  ka_account_session = v1.<payload>.<hmac>
+     │
+     │  router.replace('/cabinet')
+     ▼
+/cabinet ── GET ─────────────────────►  app/(cabinet)/cabinet/layout.tsx:
+                                        getSessionUser() → валидна? рендер : redirect /cabinet/login
+```
+
+## Модель сессии: собственный HMAC-токен (не JWT)
+
+Реализация — `lib/account/session.ts`.
+
+- **Формат токена:** `v1.<base64url(JSON payload)>.<base64url(HMAC-SHA256)>`. Подписывается строка `v1.<payloadB64>` (версия входит в подпись) — `sign()`, строки 55–56, сборка в `createSessionToken()` (58–73).
+- **Это НЕ JWT**: нет заголовка, нет стандартных claims JOSE, нет библиотек JWT. Сходство только внешнее (три части через точку).
+- **Внутри токена ровно три поля** (`SessionPayload`, строки 46–53): `sub` (userId), `iat`, `exp` (epoch seconds). Паролей, ролей, списков объектов и любых учётных данных внутри нет.
+- **Секрет:** `process.env.ACCOUNT_SESSION_SECRET`; при отсутствии — в production `null` (выпуск токена невозможен, проверка всегда «не валидна» — fail-closed); в dev — фиксированная константа `DEV_FALLBACK_SECRET` (строки 27–38).
+- **Срок жизни:** `SESSION_TTL_SECONDS = 8 * 60 * 60` — **8 часов** (строка 20); тот же `maxAge` у cookie.
+
+## Проверка токена (`verifySessionToken`, строки 76–123)
+
+1. Ровно 3 части и префикс `v1`;
+2. подпись: сравнение длин + `timingSafeEqual` (константное время);
+3. JSON-парс payload;
+4. валидация типов: `sub` под `^[a-z0-9-]+$`, `iat`/`exp` — конечные положительные числа;
+5. `exp <= now` → не валидно.
+
+`getSessionUser()` (строки 129–144) — **единая точка аутентификации** для страниц и API: читает cookie через `cookies()` из `next/headers` → `verifySessionToken` → пользователь обязан существовать в источнике данных (`findPublicDemoUserById`): сессия умирает вместе с учётной записью.
+
+## Cookie
+
+- Имя `ka_account_session` (экспорт `ACCOUNT_SESSION_COOKIE_NAME`).
+- Параметры (`sessionCookieOptions`, строки 150–156): `httpOnly: true`, `sameSite: 'lax'`, `path: '/'`, `secure` — динамически, `maxAge: 8ч`.
+- `secure` определяется `isSecureRequest()` (строки 162–169): за прокси — по `x-forwarded-proto` (Amvera), иначе по протоколу URL.
+- Установка — только в `POST /api/cabinet/login` (после успешной проверки пароля); удаление — `POST /api/cabinet/logout` (та же cookie, пустое значение, `maxAge: 0`).
+
+## Защита страниц и API
+
+| Механизм | Где | Что происходит |
+|---|---|---|
+| Guard защищённой зоны | `app/(cabinet)/cabinet/layout.tsx` | `getSessionUser()` → аноним `redirect('/cabinet/login')` для всех дочерних страниц |
+| Дублирующая проверка | каждая страница кабинета | свои `getSessionUser()`/`loadOwnedObject` |
+| API под сессией | `session/route.ts`, `objects/route.ts` | нет/невалидная cookie → `401` |
+| Демо-вход выключен в prod | `login/route.ts` + `isDemoLoginEnabled()` | production: `503 «Демонстрационный вход отключён»` |
+| Подсказки паролей | `login/page.tsx` | в prod в компонент передаётся `[]` — пароли не попадают в HTML |
+| Индексация | `layout.tsx` кабинета и login-страницы | `robots: noindex, nofollow` |
+
+## Поведение в нештатных ситуациях (проверено фактически)
+
+| Ситуация | Результат |
+|---|---|
+| Нет cookie | страницы → redirect на login; API → 401 |
+| Подделанная подпись / мусор в cookie | то же (verify возвращает null) |
+| Истёкший `exp` | то же; отдельного сообщения «сессия истекла» нет — пользователь просто попадает на форму входа |
+| Неверный пароль | `401` + «Неверный логин или пароль» (не раскрывает существование логина; при неизвестном логине выполняется фиктивное сравнение — защита от timing-различия, `demo-data.ts:124–134`) |
+| Production без `ACCOUNT_SESSION_SECRET` | вход невозможен вообще (fail-closed) |
+| Ротация секрета | все выданные токены мгновенно невалидны |
+
+## Известные ограничения текущей модели (важно перед production)
+
+1. **Нет отзыва сессии**: токен stateless; выход удаляет cookie только в данном браузере — скопированная cookie живёт до истечения `exp` (до 8 ч). Косвенно сессия умирает при удалении пользователя из источника данных.
+2. **Нет rate limiting** на `/api/cabinet/login` — перебор паролей ничем не ограничен (для демо-режима некритично: в prod вход отключён; обязательно решить до подключения реальной авторизации).
+3. **Нет аудита** попыток входа (логируется только `console.error` при 500).
+4. Пароли демо-пользователей хранятся открытым текстом в коде (только dev; данные вымышлены).
+5. Решение на production — серверное хранилище сессий с opaque session ID в cookie (план этапа 2 интеграции GEORITM, `GEO RITM/INTEGRATION-ROADMAP.md`).
+
+**Вывод: текущая авторизация — демонстрационная, не промышленная.** Не подключайте к ней реальные учётные записи клиентов до выполнения этапа 2.
+
+## Dev-скрипт очистки мёртвых Service Worker
+
+`app/layout.tsx` содержит скрипт `dev-sw-zombie-cleanup`, который выполняется **только** вне production и только на `localhost`/`127.0.0.1`: находит регистрации SW, чей скрипт больше не загружается (404/сеть), и разрегистрирует их. Мотивация и ручная инструкция — в [14-troubleshooting.md](./14-troubleshooting.md). На production-домен скрипт не попадает (ветка рендера исключается компилятором), чужие origin недостижимы по построению браузера.

@@ -1,0 +1,126 @@
+/* Страница состояния объекта: общая информация, системы, зоны. */
+
+.obj-section {
+  margin-top: clamp(24px, 3vw, 36px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.obj-section__title {
+  margin: 0;
+  @include font-size(16, 19);
+  font-weight: 600;
+  color: rgb(var(--ink-rgb));
+}
+
+.obj-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.obj-info__item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid rgba(var(--ink-rgb), 0.08);
+  border-radius: 14px;
+  background: rgba(var(--ink-rgb), 0.03);
+}
+
+.obj-info__label {
+  @include font-size(10, 11);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(var(--ink-rgb), 0.5);
+}
+
+.obj-info__value {
+  @include font-size(14, 15);
+  color: rgb(var(--ink-rgb));
+  font-variant-numeric: tabular-nums;
+}
+
+.obj-systems {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.obj-system {
+  padding: 18px 20px;
+  border: 1px solid rgba(var(--ink-rgb), 0.08);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(var(--ink-rgb), 0.05), rgba(var(--ink-rgb), 0.02));
+  transition: border-color 0.25s ease;
+
+  &:hover {
+    border-color: rgba(var(--ink-rgb), 0.18);
+  }
+
+  .acc-state__value {
+    @include font-size(14, 15);
+    font-weight: 500;
+  }
+}
+
+.obj-empty {
+  margin: 0;
+  @include font-size(14, 15);
+  color: rgba(var(--ink-rgb), 0.6);
+}
+
+.obj-zones {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid rgba(var(--ink-rgb), 0.08);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.obj-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 13px 18px;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.06);
+  transition: background 0.2s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: rgba(var(--ink-rgb), 0.03);
+  }
+}
+
+.obj-zone__info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.obj-zone__name {
+  @include font-size(14, 15);
+  font-weight: 500;
+  color: rgb(var(--ink-rgb));
+  overflow-wrap: anywhere;
+}
+
+.obj-zone__system {
+  @include font-size(11, 12);
+  color: rgba(var(--ink-rgb), 0.5);
+}
+
+@media (max-width: 640px) {
+  .obj-zone {
+    align-items: flex-start;
+  }
+}
