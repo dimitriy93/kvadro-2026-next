@@ -1,7 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {
     ACCOUNT_SESSION_COOKIE_NAME,
-    isSecureRequest,
+    isSessionCookieSecure,
     performLogout,
     sessionCookieOptions,
 } from '@/lib/account';
@@ -20,7 +20,7 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
     const response = NextResponse.json({success: true});
 
     response.cookies.set(ACCOUNT_SESSION_COOKIE_NAME, '', {
-        ...sessionCookieOptions(isSecureRequest(request)),
+        ...sessionCookieOptions(isSessionCookieSecure(request)),
         maxAge: 0,
     });
 

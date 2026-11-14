@@ -151,7 +151,7 @@ export const getSessionUser = async (): Promise<PublicAccountUser | null> => {
         if (source !== 'georitm') {
             return null;
         }
-        const record = getSessionRecord(token);
+        const record = await getSessionRecord(token);
         return record ? record.user : null;
     }
 
@@ -193,3 +193,12 @@ export const isSecureRequest = (request: Request): boolean => {
 
     return new URL(request.url).protocol === 'https:';
 };
+
+/**
+ * Флаг Secure cookie сессии. В production — всегда: прокси Amvera
+ * обслуживает кабинет только по HTTPS, а `x-forwarded-proto` — заголовок,
+ * которым клиент может управлять; решение о Secure на нём основывать
+ * нельзя. В development — по фактическому протоколу запроса.
+ */
+export const isSessionCookieSecure = (request: Request): boolean =>
+    isProduction() || isSecureRequest(request);

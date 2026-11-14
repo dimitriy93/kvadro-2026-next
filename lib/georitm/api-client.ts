@@ -428,6 +428,15 @@ export interface GeoritmReportFile {
 }
 
 /**
+ * Предельный размер файла отчёта. Ответ читается целиком в память —
+ * без ограничения аномально большой ответ GEORITM (или его сбой) мог бы
+ * исчерпать память экземпляра. Для подтверждённых типов отчётов за
+ * подтверждённый максимум периода (31 день) реальные файлы на порядки
+ * меньше; значение с запасом, не от протокола.
+ */
+const REPORT_MAX_BYTES = 25 * 1024 * 1024;
+
+/**
  * Вызов отчёта `reports/{type}/{format}` с файловым ответом (E4.3,
  * read-only). В отличие от callGeoritm тело не парсится как JSON;
  * классификация ошибок та же. Заголовки ответа GEORITM (включая
@@ -488,7 +497,16 @@ export const callGeoritmReport = async (
         throw new GeoritmApiError('http', response.status, serverMessage, `HTTP ${response.status}: reports/${type}/${format}`);
     }
 
+    // Размер известен из заголовка — читаем тело только при допустимом объёме.
+    const contentLength = Number(response.headers.get('content-length'));
+    if (Number.isFinite(contentLength) && contentLength > REPORT_MAX_BYTES) {
+        throw new GeoritmApiError('http', response.status, null, `Ответ отчёта превышает ${REPORT_MAX_BYTES} байт: reports/${type}/${format}`);
+    }
+
     const content = new Uint8Array(await response.arrayBuffer());
+    if (content.length > REPORT_MAX_BYTES) {
+        throw new GeoritmApiError('http', response.status, null, `Ответ отчёта превышает ${REPORT_MAX_BYTES} байт: reports/${type}/${format}`);
+    }
     return {contentType: response.headers.get('content-type'), content};
 };
 

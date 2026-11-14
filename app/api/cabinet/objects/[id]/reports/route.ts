@@ -19,6 +19,42 @@ interface ReportRequestBody {
     format?: unknown;
 }
 
+/**
+ * Ограничение одновременных формирований отчётов (без инфраструктуры
+ * очередей): на пользователя — один отчёт за раз, на процесс — максимум
+ * два. Формирование на стороне GEORITM синхронное и может занимать до
+ * тайм-аута (30 с); без ограничения пользователь мог бы держать
+ * произвольное число параллельных тяжёлых запросов и перегрузить
+ * GEORITM или сервер кабинета. Превышение — честный 429 с указанием
+ * повторить позже; лимиты процесса, а не экземпляров Amvera — при
+ * масштабировании заменяется распределённым решением.
+ */
+const MAX_REPORTS_PER_USER = 1;
+const MAX_REPORTS_TOTAL = 2;
+const activeReports = new Map<string, number>();
+
+const tryAcquireReportSlot = (userId: string): boolean => {
+    const total = [...activeReports.values()].reduce((sum, count) => sum + count, 0);
+    if (total >= MAX_REPORTS_TOTAL) {
+        return false;
+    }
+    const userCount = activeReports.get(userId) ?? 0;
+    if (userCount >= MAX_REPORTS_PER_USER) {
+        return false;
+    }
+    activeReports.set(userId, userCount + 1);
+    return true;
+};
+
+const releaseReportSlot = (userId: string): void => {
+    const userCount = activeReports.get(userId) ?? 0;
+    if (userCount <= 1) {
+        activeReports.delete(userId);
+    } else {
+        activeReports.set(userId, userCount - 1);
+    }
+};
+
 /** Строгая дата YYYY-MM-DD (валидный календарный день). */
 const isIsoDate = (value: string): boolean => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -107,19 +143,31 @@ export const POST = async (
             return NextResponse.json({success: false, error: 'Объект не найден'}, {status: 404});
         }
 
-        const file = await getReportForObject(object.id, {type, from, to, format});
+        // Слот берётся только после валидации и проверки владения: на
+        // мусорных запросах лимит не расходуется.
+        if (!tryAcquireReportSlot(user.id)) {
+            return NextResponse.json(
+                {success: false, error: 'Отчёт уже формируется. Подождите завершения и попробуйте снова'},
+                {status: 429, headers: {'Cache-Control': 'no-store'}},
+            );
+        }
 
-        // filename* (RFC 5987) — кириллица; ASCII-fallback — для старых клиентов.
-        const encodedName = encodeURIComponent(file.filename);
-        return new NextResponse(Buffer.from(file.content), {
-            status: 200,
-            headers: {
-                'Content-Type': file.contentType,
-                'Content-Disposition': `attachment; filename="${asciiFilename(file.filename)}"; filename*=UTF-8''${encodedName}`,
-                'X-Content-Type-Options': 'nosniff',
-                'Cache-Control': 'no-store',
-            },
-        });
+        try {
+            const file = await getReportForObject(object.id, {type, from, to, format});
+            // filename* (RFC 5987) — кириллица; ASCII-fallback — для старых клиентов.
+            const encodedName = encodeURIComponent(file.filename);
+            return new NextResponse(Buffer.from(file.content), {
+                status: 200,
+                headers: {
+                    'Content-Type': file.contentType,
+                    'Content-Disposition': `attachment; filename="${asciiFilename(file.filename)}"; filename*=UTF-8''${encodedName}`,
+                    'X-Content-Type-Options': 'nosniff',
+                    'Cache-Control': 'no-store',
+                },
+            });
+        } finally {
+            releaseReportSlot(user.id);
+        }
     } catch (error) {
         if (error instanceof GeoritmApiError) {
             // 401 GEORITM — credentials отозваны (сессия кабинета уже удалена

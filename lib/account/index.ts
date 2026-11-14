@@ -39,7 +39,7 @@ export {
     getSessionSecret,
     getSessionUser,
     isDemoLoginEnabled,
-    isSecureRequest,
+    isSessionCookieSecure,
     sessionCookieOptions,
 } from './session';
 export {

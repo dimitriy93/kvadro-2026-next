@@ -2,7 +2,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {
     getSessionSecret,
     isDemoLoginEnabled,
-    isSecureRequest,
+    isSessionCookieSecure,
     sessionCookieOptions,
     ACCOUNT_SESSION_COOKIE_NAME,
     verifyCredentials,
@@ -23,10 +23,18 @@ interface LoginRequestBody {
  */
 const LOGIN_ATTEMPTS_LIMIT = 5;
 const LOGIN_ATTEMPTS_WINDOW_MS = 15 * 60 * 1000;
+/**
+ * Предохранитель памяти: ключ — значение из заголовка `x-forwarded-for`,
+ * которое клиент может подделывать сколько угодно раз. Без ограничения
+ * размера карта росла бы на запись за каждую попытку с новым XFF.
+ * Превышение вытесняет самые старые ключи — для реального клиента с
+ * стабильным адресом лимит попыток продолжает работать.
+ */
+const LOGIN_ATTEMPTS_MAX_KEYS = 10_000;
 const attempts = new Map<string, {count: number; resetAt: number}>();
 
 const clientKey = (request: NextRequest): string =>
-    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'local';
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim().slice(0, 64) ?? 'local';
 
 const isRateLimited = (key: string): boolean => {
     const now = Date.now();
@@ -39,6 +47,18 @@ const isRateLimited = (key: string): boolean => {
 
 const registerFailedAttempt = (key: string): void => {
     const now = Date.now();
+    // Вытеснение просроченных ключей и предохранитель размера карты.
+    for (const [entryKey, entry] of attempts) {
+        if (entry.resetAt <= now) {
+            attempts.delete(entryKey);
+        }
+    }
+    if (!attempts.has(key) && attempts.size >= LOGIN_ATTEMPTS_MAX_KEYS) {
+        const oldest = attempts.keys().next().value;
+        if (oldest !== undefined) {
+            attempts.delete(oldest);
+        }
+    }
     const entry = attempts.get(key);
     if (!entry || entry.resetAt <= now) {
         attempts.set(key, {count: 1, resetAt: now + LOGIN_ATTEMPTS_WINDOW_MS});
@@ -86,7 +106,10 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
         const login = typeof body?.login === 'string' ? body.login.trim() : '';
         const password = typeof body?.password === 'string' ? body.password : '';
 
-        if (!login || !password) {
+        // Ограничение длины: без него тело запроса произвольного размера
+        // доходит до источника данных (в demo — хеширование, в georitm —
+        // отправка на внешний API).
+        if (!login || !password || login.length > 128 || password.length > 256) {
             return NextResponse.json(
                 {success: false, error: 'Укажите логин и пароль'},
                 {status: 400},
@@ -124,7 +147,7 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
         response.cookies.set(
             ACCOUNT_SESSION_COOKIE_NAME,
             verified.sessionValue,
-            sessionCookieOptions(isSecureRequest(request)),
+            sessionCookieOptions(isSessionCookieSecure(request)),
         );
 
         return response;

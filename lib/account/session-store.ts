@@ -4,6 +4,22 @@ import path from 'node:path';
 import type {PublicAccountUser} from './contracts';
 
 /**
+ * Сериализация мутаций хранилища в рамках процесса. Каждая операция
+ * «прочитать → изменить → записать» выполняется в очереди, поэтому
+ * конкурентные login/logout/401-отзывы не теряют изменения: без мьютекса
+ * поздний persist по устаревшему снимку мог бы «воскресить» отозванную
+ * сессию. Ожидание очереди асинхронное — event loop не блокируется.
+ */
+let storeQueue: Promise<unknown> = Promise.resolve();
+
+const withStoreLock = async <T>(operation: () => T): Promise<T> => {
+    const run = storeQueue.then(operation);
+    // Очередь не должна прерываться rejected-промисом предыдущей операции.
+    storeQueue = run.catch(() => {});
+    return run;
+};
+
+/**
  * Серверное хранилище сессий личного кабинета.
  *
  * Зачем: HMAC-cookie (`session.ts`) подписана, но не зашифрована — её payload
@@ -106,39 +122,42 @@ const persist = (store: Map<string, StoredSessionRecord>): void => {
 
 /**
  * Создаёт сессию входа через GEORITM. Возвращает непрозрачный
- * идентификатор для HttpOnly-cookie.
+ * идентификатор для HttpOnly-cookie. Мутация хранилища сериализуется
+ * вместе с logout/отзывами — конкурентные операции не теряются.
  */
-export const createGeoritmSession = (
+export const createGeoritmSession = async (
     user: PublicAccountUser,
     georitmBasic: string,
     ttlSeconds: number,
-): string => {
-    const sessionId = `g${randomBytes(32).toString('base64url')}`;
-    const now = Math.floor(Date.now() / 1000);
+): Promise<string> =>
+    withStoreLock(() => {
+        const sessionId = `g${randomBytes(32).toString('base64url')}`;
+        const now = Math.floor(Date.now() / 1000);
 
-    const store = load();
-    // Заодно чистим истекшие записи.
-    for (const [key, record] of store) {
-        if (record.expiresAt <= now) {
-            store.delete(key);
+        const store = load();
+        // Заодно чистим истекшие записи.
+        for (const [key, record] of store) {
+            if (record.expiresAt <= now) {
+                store.delete(key);
+            }
         }
-    }
-    store.set(recordKey(sessionId), {
-        createdAt: now,
-        expiresAt: now + ttlSeconds,
-        user,
-        georitmBasic,
-    });
-    persist(store);
+        store.set(recordKey(sessionId), {
+            createdAt: now,
+            expiresAt: now + ttlSeconds,
+            user,
+            georitmBasic,
+        });
+        persist(store);
 
-    return sessionId;
-};
+        return sessionId;
+    });
 
 /**
  * Запись сессии по непрозрачному идентификатору (или null).
- * Истекшая сессия удаляется и возвращается как null.
+ * Истекшая сессия удаляется и возвращается как null. Чтение без мутации
+ * выполняется напрямую; удаление истекшей записи сериализуется.
  */
-export const getSessionRecord = (sessionId: string): StoredSessionRecord | null => {
+export const getSessionRecord = async (sessionId: string): Promise<StoredSessionRecord | null> => {
     const key = recordKey(sessionId);
     const store = load();
     const record = store.get(key);
@@ -147,8 +166,16 @@ export const getSessionRecord = (sessionId: string): StoredSessionRecord | null 
     }
 
     if (record.expiresAt <= Math.floor(Date.now() / 1000)) {
-        store.delete(key);
-        persist(store);
+        await withStoreLock(() => {
+            const fresh = load();
+            // Запись могла быть заменена новой сессией с тем же временем
+            // истечения — удаляем только саму истекшую запись по ключу.
+            const stale = fresh.get(key);
+            if (stale && stale.expiresAt <= Math.floor(Date.now() / 1000)) {
+                fresh.delete(key);
+                persist(fresh);
+            }
+        });
         return null;
     }
 
@@ -156,11 +183,12 @@ export const getSessionRecord = (sessionId: string): StoredSessionRecord | null 
 };
 
 /** Отзыв сессии (logout, инвалидация при 401 от GEORITM). */
-export const deleteSession = (sessionId: string): boolean => {
-    const store = load();
-    const removed = store.delete(recordKey(sessionId));
-    if (removed) {
-        persist(store);
-    }
-    return removed;
-};
+export const deleteSession = async (sessionId: string): Promise<boolean> =>
+    withStoreLock(() => {
+        const store = load();
+        const removed = store.delete(recordKey(sessionId));
+        if (removed) {
+            persist(store);
+        }
+        return removed;
+    });

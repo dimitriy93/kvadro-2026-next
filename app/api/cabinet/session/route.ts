@@ -9,8 +9,14 @@ export const GET = async (): Promise<NextResponse> => {
     const user = await getSessionUser();
 
     if (!user) {
-        return NextResponse.json({success: false, user: null}, {status: 401});
+        return NextResponse.json(
+            {success: false, user: null},
+            {status: 401, headers: {'Cache-Control': 'no-store'}},
+        );
     }
 
-    return NextResponse.json({success: true, user});
+    return NextResponse.json(
+        {success: true, user},
+        {headers: {'Cache-Control': 'no-store'}},
+    );
 };

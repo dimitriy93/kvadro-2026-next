@@ -93,7 +93,7 @@ const resolveGeoritmAuth = async (): Promise<GeoritmAuth | null> => {
         return null;
     }
 
-    const record = getSessionRecord(sessionId);
+    const record = await getSessionRecord(sessionId);
     if (!record) {
         return null;
     }
@@ -150,7 +150,7 @@ export const verifyGeoritmCredentials = async (
             : login,
     };
 
-    const sessionValue = createGeoritmSession(user, basic, SESSION_TTL);
+    const sessionValue = await createGeoritmSession(user, basic, SESSION_TTL);
     return {user, sessionValue};
 };
 
@@ -160,7 +160,7 @@ export const logoutGeoritm = async (): Promise<void> => {
     if (!auth) {
         return;
     }
-    deleteSession(auth.sessionId);
+    await deleteSession(auth.sessionId);
     try {
         await georitmLogout(auth.basic);
     } catch {
