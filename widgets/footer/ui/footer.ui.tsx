@@ -49,12 +49,13 @@ export const Footer = () => (
 
           <div className="footer__row">
             <span className="footer__title">Для клиентов</span>
-            {/* Кабинет пока работает на демонстрационных данных и в production
-                недоступен, поэтому пункт не является ссылкой: тот же класс link
-                для визуального единообразия, но без href и перехода. */}
-            <span className="link" aria-disabled="true">
+            {/* Кабинет доступен в production (E1–E3.2): аноним попадает на
+                страницу входа /cabinet/login — единственный публичный сегмент
+                PWA кабинета; Service Worker на публичных страницах не
+                регистрируется. */}
+            <Link href={cabinet.login.href} className="link">
               {cabinet.title}
-            </span>
+            </Link>
           </div>
         </nav>
 

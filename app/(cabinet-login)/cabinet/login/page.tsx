@@ -1,6 +1,7 @@
 import {Metadata} from 'next';
 import {getAccountDataSource, getDemoLoginHints} from '@/lib/account';
 import {cabinetPwaMetadata} from '@/config/pwa';
+import {ServiceWorkerRegistrar} from '@/components/service-worker-registrar';
 import {AccountLoginPage} from './ui/login.ui';
 
 export const metadata: Metadata = {
@@ -30,5 +31,12 @@ export default function AccountLoginPageRoute() {
             ? []
             : getDemoLoginHints();
 
-    return <AccountLoginPage demoHints={demoHints}/>;
+    return (
+        <>
+            {/* Регистрация SW доступна и анониму — страница входа тоже часть
+                PWA кабинета; на публичных страницах компонент не подключён. */}
+            <ServiceWorkerRegistrar/>
+            <AccountLoginPage demoHints={demoHints}/>
+        </>
+    );
 }

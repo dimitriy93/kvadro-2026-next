@@ -4,6 +4,7 @@ import {redirect} from 'next/navigation';
 import {getSessionUser} from '@/lib/account';
 import {cabinet} from '@/config/routes/cabinet.routes';
 import {cabinetPwaMetadata} from '@/config/pwa';
+import {ServiceWorkerRegistrar} from '@/components/service-worker-registrar';
 import {AccountShell} from './ui/account-shell.ui';
 
 export const metadata: Metadata = {
@@ -28,5 +29,11 @@ export default async function AccountLayout({children}: { children: ReactNode })
         redirect(cabinet.login.href);
     }
 
-    return <AccountShell userName={user.displayName}>{children}</AccountShell>;
+    return (
+        <>
+            {/* Регистрация SW только в сегментах /cabinet/* (E3.2). */}
+            <ServiceWorkerRegistrar/>
+            <AccountShell userName={user.displayName}>{children}</AccountShell>
+        </>
+    );
 }

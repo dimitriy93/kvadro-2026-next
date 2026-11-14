@@ -27,7 +27,7 @@ export const cabinetPwaMetadata: Pick<Metadata, 'manifest' | 'appleWebApp' | 'ic
         // Статусная строка прозрачна поверх контента — соответствует тёмной
         // теме кабинета (значение по умолчанию).
         statusBarStyle: 'black-translucent',
-        title: 'Кабинет',
+        title: 'Кабинет Квадро-Арсенал',
     },
     icons: {
         // Явно повторяем корневой фавикон (файловая конвенция app/icon.png):

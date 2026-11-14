@@ -11,7 +11,9 @@ import {NextResponse} from 'next/server';
  *
  * Scope и start_url заданы явно (префикс `/cabinet/`) — по спецификации
  * manifest они не выводятся из расположения manifest-файла. Service worker
- * на этом этапе не входит (E3.2); поле `serviceworker` здесь не указывается.
+ * подключается отдельным route handler'ом `/cabinet/sw.js` (см. соседний
+ * `app/cabinet/sw.js/route.ts`); поле `serviceworker` в manifest не указывается:
+ * регистрация выполняется клиентским компонентом с явным scope.
  *
  * Иконки — `public/cabinet/icons/`: фирменная монограмма «KA» (белая плашка
  * с вырезанным знаком, `app/_assets/images/logo.png`) на фоне тёмной темы
@@ -22,7 +24,7 @@ import {NextResponse} from 'next/server';
 
 const MANIFEST = {
     name: 'Кабинет Квадро-Арсенал',
-    short_name: 'Кабинет',
+    short_name: 'Кабинет Квадро-Арсенал',
     id: '/cabinet/',
     start_url: '/cabinet/',
     scope: '/cabinet/',
