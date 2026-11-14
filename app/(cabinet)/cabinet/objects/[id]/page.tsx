@@ -1,7 +1,7 @@
 import {Metadata} from 'next';
 import {notFound, redirect} from 'next/navigation';
-import {findObjectForUser, getAccountDataSource, getZonesForObject, getSessionUser} from '@/lib/account';
-import type {ObjectZoneSection} from '@/lib/account';
+import {findObjectForUser, getAccountDataSource, getDiagnosticsForObject, getZonesForObject, getSessionUser} from '@/lib/account';
+import type {ObjectFault, ObjectZoneSection} from '@/lib/account';
 import {cabinet} from '@/config/routes/cabinet.routes';
 import {ObjectStateView} from './ui/object-state.ui';
 
@@ -35,21 +35,24 @@ export default async function ObjectStatePage({params}: ObjectPageProps) {
         notFound();
     }
 
-    // Ошибка загрузки зон не должна ронять всю карточку объекта: секция
-    // покажет сообщение об ошибке, остальная страница остаётся рабочей.
-    let zones: ObjectZoneSection[] = [];
-    let zonesLoadFailed = false;
-    try {
-        zones = await getZonesForObject(object.id);
-    } catch {
-        zonesLoadFailed = true;
-    }
+    // Ошибки загрузки зон и диагностики не должны ронять карточку объекта:
+    // соответствующие секции покажут сообщение, остальная страница остаётся
+    // рабочей. Загрузки независимы — выполняются параллельно.
+    const [zonesResult, diagnosticsResult] = await Promise.allSettled([
+        getZonesForObject(object.id),
+        getDiagnosticsForObject(object.id),
+    ]);
+
+    const zones = zonesResult.status === 'fulfilled' ? zonesResult.value : [];
+    const diagnostics = diagnosticsResult.status === 'fulfilled' ? diagnosticsResult.value : [];
 
     return (
         <ObjectStateView
             object={object}
             zones={zones}
-            zonesLoadFailed={zonesLoadFailed}
+            zonesLoadFailed={zonesResult.status === 'rejected'}
+            faults={diagnostics}
+            faultsLoadFailed={diagnosticsResult.status === 'rejected'}
             isDemoData={getAccountDataSource() === 'demo'}
         />
     );

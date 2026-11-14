@@ -1,4 +1,4 @@
-import type {MonitorObject, ObjectZone, ObjectZoneSection} from '@/lib/account';
+import type {MonitorObject, ObjectFault, ObjectZone, ObjectZoneSection} from '@/lib/account';
 import {ObjectPageHeader} from './object-page-header.ui';
 import {ObjectStateBadge} from '@/app/(cabinet)/cabinet/ui/object-state-badge.ui';
 import {ZONE_SYSTEM_NAMES} from '@/app/(cabinet)/cabinet/ui/state-meta';
@@ -10,6 +10,10 @@ interface IObjectStateViewProps {
     zones: ObjectZoneSection[];
     /** true — раздел «Зоны» не удалось загрузить; остальные секции страницы рабочие. */
     zonesLoadFailed?: boolean;
+    /** Активные неисправности оборудования (успешный ответ источника). */
+    faults?: ObjectFault[];
+    /** true — неисправности не удалось загрузить; остальные секции страницы рабочие. */
+    faultsLoadFailed?: boolean;
     /** true — демонстрационный источник данных; false — реальные данные GEORITM. */
     isDemoData: boolean;
 }
@@ -40,17 +44,38 @@ const zoneMeta = (zone: ObjectZone, isDemoData: boolean): string => {
     return parts.filter((part) => part !== null).join(' · ');
 };
 
+/** Второстепенная строка неисправности: раздел и зона, если известны. */
+const faultMeta = (fault: ObjectFault): string | null => {
+    const parts = [
+        fault.areaNum !== undefined ? `раздел № ${fault.areaNum}` : null,
+        fault.zoneNum !== undefined ? `зона № ${fault.zoneNum}` : null,
+    ];
+    const joined = parts.filter((part) => part !== null).join(' · ');
+    return joined.length > 0 ? joined : null;
+};
+
 /**
- * Страница состояния объекта: общая информация, системы, разделы и зоны.
+ * Страница состояния объекта: общая информация, системы, техническое
+ * состояние (прибор, активные неисправности), разделы и зоны.
  * Только отображение — без управления оборудованием.
  *
  * Зоны сгруппированы по разделам (GEORITM areas[].zones[]). Системные метки
  * зон показываются только на демонстрационных данных: в GEORITM нет поля
  * «охранная/пожарная» на уровне зоны (вопрос B7), и подписывать реальные
  * зоны «охранной» значило бы выдавать классификацию, которой API не даёт.
+ *
+ * Пустой список неисправностей показывается только при успешном ответе
+ * источника; ошибка загрузки — отдельное сообщение. Если объект в состоянии
+ * неисправности, но список пуст, подаётся предупреждение: отсутствие записи
+ * не трактуется как «всё в норме».
  */
-export const ObjectStateView = ({object, zones, zonesLoadFailed = false, isDemoData}: IObjectStateViewProps) => {
+export const ObjectStateView = (
+    {object, zones, zonesLoadFailed = false, faults = [], faultsLoadFailed = false, isDemoData}: IObjectStateViewProps,
+) => {
     const totalZones = zones.reduce((sum, section) => sum + section.zones.length, 0);
+    const faultsInconsistent = !faultsLoadFailed
+        && faults.length === 0
+        && object.securityAlarm === 'fault';
 
     return (
         <>
@@ -83,6 +108,58 @@ export const ObjectStateView = ({object, zones, zonesLoadFailed = false, isDemoD
                     </div>
                     <div className="obj-system">
                         <ObjectStateBadge kind="connection" value={object.connection}/>
+                    </div>
+                </div>
+            </section>
+
+            <section className="obj-section" aria-label="Техническое состояние">
+                <h2 className="obj-section__title">Техническое состояние</h2>
+
+                <div className="obj-info">
+                    <div className="obj-info__item">
+                        <span className="obj-info__label">Прибор</span>
+                        <span className="obj-info__value">
+                            {object.device
+                                ? object.device.shortName
+                                    ? `${object.device.name} (${object.device.shortName})`
+                                    : object.device.name
+                                : 'Нет данных'}
+                        </span>
+                        {object.device?.firmware && (
+                            <span className="obj-info__label">Прошивка {object.device.firmware}</span>
+                        )}
+                    </div>
+                    <div className="obj-info__item">
+                        <span className="obj-info__label">Активные неисправности</span>
+                        {faultsLoadFailed ? (
+                            <span className="obj-zones-error" role="alert">
+                                Не удалось загрузить данные о неисправностях. Попробуйте обновить страницу позже.
+                            </span>
+                        ) : faults.length > 0 ? (
+                            <ul className="obj-faults">
+                                {faults.map((fault) => {
+                                    const meta = faultMeta(fault);
+                                    return (
+                                        <li key={fault.id} className="obj-fault">
+                                            <span className="obj-fault__message">{fault.message}</span>
+                                            <span className="obj-fault__meta">
+                                                {[
+                                                    meta,
+                                                    `код ${fault.code}`,
+                                                ].filter((part) => part !== null).join(' · ')}
+                                            </span>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        ) : faultsInconsistent ? (
+                            <span className="obj-zones-error" role="status">
+                                Объект сообщает о неисправности, однако список неисправностей пуст.
+                                Данные противоречивы — обратитесь в охранную организацию.
+                            </span>
+                        ) : (
+                            <span className="obj-info__value">Не зарегистрированы</span>
+                        )}
                     </div>
                 </div>
             </section>

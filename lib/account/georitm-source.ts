@@ -4,6 +4,8 @@ import type {
     MonitorEventType,
     MonitorObject,
     MonitorObjectEvent,
+    ObjectDeviceInfo,
+    ObjectFault,
     ObjectZone,
     ObjectZoneSection,
     PublicAccountUser,
@@ -23,6 +25,7 @@ import {
     georitmLogin,
     georitmLogout,
     georitmObjectCard,
+    georitmObjectFaults,
     georitmObjectStatus,
     georitmObjects,
     georitmPartitionsState,
@@ -30,9 +33,11 @@ import {
     type GeoritmAlertTemplate,
     type GeoritmArea,
     type GeoritmAreaZone,
+    type GeoritmDevice,
     type GeoritmObjectAlert,
     type GeoritmObjectAlertLog,
     type GeoritmObjectCard,
+    type GeoritmObjectFault,
     type GeoritmObjectSummary,
 } from '@/lib/georitm/api-client';
 
@@ -222,11 +227,40 @@ const mapAddress = (object: GeoritmObjectSummary): string => {
     return parts.join(', ');
 };
 
+/**
+ * Прибор объекта — whitelist-проекция devices[] (E4.2, подтверждено на
+ * сервере 2.27.0 в objects/obj/): только name/shortName/firmware. Остальные
+ * поля записи прибора, включая imei, в DTO не переносятся. Первый прибор
+ * без внятного имени пропускается; пустой результат — «нет данных», не норма.
+ */
+const toDeviceInfo = (object: GeoritmObjectSummary): ObjectDeviceInfo | undefined => {
+    const devices = Array.isArray(object.devices) ? object.devices : [];
+    for (const device of devices) {
+        if (!device || typeof device !== 'object') {
+            continue;
+        }
+        const candidate = device as GeoritmDevice;
+        if (typeof candidate.name === 'string' && candidate.name.trim().length > 0) {
+            return {
+                name: candidate.name,
+                shortName: typeof candidate.shortName === 'string' && candidate.shortName.trim().length > 0
+                    ? candidate.shortName
+                    : undefined,
+                firmware: typeof candidate.firmware === 'string' && candidate.firmware.trim().length > 0
+                    ? candidate.firmware
+                    : undefined,
+            };
+        }
+    }
+    return undefined;
+};
+
 const toMonitorObject = (object: GeoritmObjectSummary): MonitorObject => ({
     id: String(object.id),
     extId: typeof object.extId === 'number' ? object.extId : undefined,
     name: typeof object.name === 'string' ? object.name : `Объект ${object.id}`,
     address: mapAddress(object),
+    device: toDeviceInfo(object),
     securityAlarm: mapSecurityAlarm(object),
     fireAlarm: 'unknown',
     connection: mapConnection(object),
@@ -473,6 +507,74 @@ export const getGeoritmZonesForObject = async (objectId: string): Promise<Object
         }
         const card = await georitmObjectCard(auth.basic, target.id);
         return toZones(filterSensitiveCard(card));
+    } catch (error) {
+        if (error instanceof GeoritmApiError && error.isUnauthorized) {
+            deleteSession(auth.sessionId);
+        }
+        throw error;
+    }
+};
+
+// ——————————————— Расширенное техническое состояние (E4.2) ———————————————
+
+/**
+ * Нормализация GeoritmObjectFault → ObjectFault. Запись без числового
+ * faultCode пропускается: код — единственный идентификатор неисправности.
+ * Без messageText текст собирается из кода, не подменяется «нормой».
+ */
+const toObjectFault = (record: GeoritmObjectFault, index: number): ObjectFault | null => {
+    if (typeof record?.faultCode !== 'number' || !Number.isFinite(record.faultCode)) {
+        return null;
+    }
+    const message = typeof record.messageText === 'string' && record.messageText.trim().length > 0
+        ? record.messageText.trim()
+        : `Неисправность (код ${record.faultCode})`;
+
+    return {
+        id: typeof record.areaZoneId === 'number'
+            ? `fault:${record.areaZoneId}:${record.faultCode}`
+            : `fault:row-${index}`,
+        code: record.faultCode,
+        message,
+        areaNum: typeof record.areaNum === 'number' ? record.areaNum : undefined,
+        zoneNum: typeof record.areaZoneNum === 'number' ? record.areaZoneNum : undefined,
+    };
+};
+
+/**
+ * Активные неисправности объекта через objects/obj-faults/ (read-only,
+ * E4.2; подтверждён на сервере 2.27.0). Доступ — как в остальных методах:
+ * объект должен присутствовать в выдаче objects-tree-set/ текущего
+ * пользователя; чужой и несуществующий объект неотличимы (пусто).
+ *
+ * Успешный пустой ответ — сервер явно не зарегистрировал неисправностей;
+ * ошибка вызова пробрасывается выше и не превращается в пустой список.
+ */
+export const getGeoritmDiagnosticsForObject = async (objectId: string): Promise<ObjectFault[]> => {
+    const auth = await resolveGeoritmAuth();
+    if (!auth) {
+        return [];
+    }
+
+    try {
+        const owned = await fetchOwnedObjects(auth.basic);
+        const target = owned.find((object) => String(object.id) === objectId);
+        if (!target) {
+            return [];
+        }
+
+        const records = await georitmObjectFaults(auth.basic, target.id);
+        const faults: ObjectFault[] = [];
+        for (const [index, record] of records.entries()) {
+            if (!record || typeof record !== 'object') {
+                continue;
+            }
+            const fault = toObjectFault(record, index);
+            if (fault) {
+                faults.push(fault);
+            }
+        }
+        return faults;
     } catch (error) {
         if (error instanceof GeoritmApiError && error.isUnauthorized) {
             deleteSession(auth.sessionId);

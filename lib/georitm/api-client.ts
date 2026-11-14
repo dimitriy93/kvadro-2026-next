@@ -146,6 +146,20 @@ export interface GeoritmObjectState {
     hasAlarm?: 0 | 1 | 2;
 }
 
+/**
+ * Запись прибора из devices[] (objects/obj/ и obj-details/, подтверждено
+ * на сервере 2.27.0). Содержит imei — наружу отдаётся только whitelist
+ * (name/shortName/firmware), проекцию выполняет GeoritmSource.
+ */
+export interface GeoritmDevice {
+    name?: string;
+    shortName?: string;
+    firmware?: string;
+    description?: string;
+    imei?: string;
+    [key: string]: unknown;
+}
+
 /** Краткая запись объекта в дереве objects/objects-tree-set/ и в objects/obj/. */
 export interface GeoritmObjectSummary {
     id: number;
@@ -168,6 +182,8 @@ export interface GeoritmObjectSummary {
     lastGSMConnectionTime?: number | string;
     lastGPSConnectionTime?: number | string;
     canArm?: 0 | 1;
+    /** Приборы объекта (объект/obj/, наблюдение 2.27.0; в документации не описан). */
+    devices?: GeoritmDevice[];
     [key: string]: unknown;
 }
 
@@ -233,6 +249,24 @@ export interface GeoritmObjectStatus {
 /** Ответ objects/state/ — словарь «номер раздела → 1 снят / 2 под охраной». */
 export interface GeoritmPartitionsState {
     state?: Record<string, number>;
+}
+
+/**
+ * Запись неисправности objects/obj-faults/ (E4.2, подтверждено на сервере
+ * 2.27.0: faultCode 301 «Неисправность сети 220», 302 «Разряд аккумулятора»,
+ * 308 «Выключение системы»). Список — активные неисправности (их снимает
+ * objects/clear-faults/); справочника кодов в документации нет, смысл —
+ * только по messageText сервера.
+ */
+export interface GeoritmObjectFault {
+    areaZoneId?: number;
+    areaZoneName?: string | null;
+    areaZoneNum?: number;
+    areaNum?: number;
+    areaName?: string | null;
+    faultCode?: number;
+    messageText?: string;
+    [key: string]: unknown;
 }
 
 /**
@@ -345,6 +379,24 @@ export const georitmObjectStatus = async (basic: string, objectId: number): Prom
 
 export const georitmPartitionsState = async (basic: string, imei: string): Promise<GeoritmPartitionsState> =>
     callGeoritm<GeoritmPartitionsState>('objects/state/', {imei}, basic);
+
+/**
+ * Активные неисправности объекта objects/obj-faults/ (read-only, E4.2).
+ * Ответ — плоский массив записей; неожиданный формат — ошибка, а не пустой
+ * список: отсутствие данных не должно выглядеть как «неисправностей нет».
+ */
+export const georitmObjectFaults = async (basic: string, objectId: number): Promise<GeoritmObjectFault[]> => {
+    const response = await callGeoritm<GeoritmObjectFault[] | {faults?: GeoritmObjectFault[]}>(
+        'objects/obj-faults/',
+        {objectId},
+        basic,
+    );
+    const faults = Array.isArray(response) ? response : response?.faults;
+    if (!Array.isArray(faults)) {
+        throw new GeoritmApiError('http', 200, null, 'Неожиданный формат objects/obj-faults/');
+    }
+    return faults;
+};
 
 /**
  * Справочник шаблонов событий alert-template/list/ (read-only). Приходит

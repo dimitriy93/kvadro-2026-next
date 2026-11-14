@@ -1,5 +1,5 @@
 import {createHash, timingSafeEqual} from 'node:crypto';
-import type {MonitorObject, ObjectZoneSection, PublicAccountUser} from './contracts';
+import type {MonitorObject, ObjectFault, ObjectZoneSection, PublicAccountUser} from './contracts';
 
 /**
  * Демонстрационный источник данных личного кабинета.
@@ -42,6 +42,7 @@ const DEMO_OBJECTS: readonly MonitorObject[] = [
         id: 'demo-object-magazin-belochka',
         name: 'Магазин «Белочка»',
         address: 'г. Электросталь, ул. Мира, д. 12',
+        device: {name: 'Прибор контроля «Демо-12»', shortName: 'Демо-12', firmware: '1.4.2'},
         securityAlarm: 'disarmed',
         fireAlarm: 'normal',
         connection: 'online',
@@ -51,6 +52,7 @@ const DEMO_OBJECTS: readonly MonitorObject[] = [
         id: 'demo-object-magazin-romashka',
         name: 'Магазин «Ромашка»',
         address: 'г. Электросталь, просп. Ленина, д. 30',
+        device: {name: 'Прибор контроля «Демо-12»', shortName: 'Демо-12', firmware: '1.4.2'},
         securityAlarm: 'armed',
         fireAlarm: 'normal',
         connection: 'unstable',
@@ -62,12 +64,48 @@ const DEMO_OBJECTS: readonly MonitorObject[] = [
         id: 'demo-object-sklad-zapadnyy',
         name: 'Склад «Западный»',
         address: 'г. Электросталь, Западная промзона, корп. 4',
+        device: {name: 'Прибор контроля «Демо-16»', shortName: 'Демо-16', firmware: '2.0.1'},
         securityAlarm: 'alarm',
         fireAlarm: 'fault',
         connection: 'offline',
         updatedAt: '2026-10-23T17:05:00+03:00',
     },
 ];
+
+/**
+ * Демонстрационные активные неисправности оборудования (E4.2). Структура
+ * повторяет модель GEORITM obj-faults/ (код + текст + раздел/зона), но все
+ * значения вымышлены и не являются кодами реального прибора. У «Ромашки»
+ * неисправностей нет — успешный пустой ответ.
+ */
+const DEMO_DIAGNOSTICS: Readonly<Record<string, readonly ObjectFault[]>> = {
+    'demo-object-magazin-belochka': [
+        {
+            id: 'demo-fault-belochka-301',
+            code: 301,
+            message: 'Внимание: Неисправность сети 220',
+            areaNum: 0,
+            zoneNum: 0,
+        },
+        {
+            id: 'demo-fault-belochka-302',
+            code: 302,
+            message: 'Внимание: Разряд аккумулятора',
+            areaNum: 0,
+            zoneNum: 0,
+        },
+    ],
+    'demo-object-magazin-romashka': [],
+    'demo-object-sklad-zapadnyy': [
+        {
+            id: 'demo-fault-sklad-301',
+            code: 301,
+            message: 'Внимание: Неисправность сети 220',
+            areaNum: 0,
+            zoneNum: 0,
+        },
+    ],
+};
 
 /**
  * Демонстрационные разделы и зоны объектов. Состояния вымышлены; у каждой
@@ -250,6 +288,14 @@ export const findDemoObjectForUser = (userId: string, objectId: string): Monitor
 /** Разделы и зоны объекта. Вызывается только после проверки принадлежности объекта. */
 export const getDemoZonesForObject = (objectId: string): ObjectZoneSection[] => {
     return [...(DEMO_ZONES[objectId] ?? [])];
+};
+
+/**
+ * Активные неисправности объекта. Вызывается после проверки принадлежности;
+ * чужой и несуществующий объект неотличимы — пустой список.
+ */
+export const getDemoDiagnosticsForObject = (objectId: string): ObjectFault[] => {
+    return [...(DEMO_DIAGNOSTICS[objectId] ?? [])];
 };
 
 export interface DemoLoginHint {

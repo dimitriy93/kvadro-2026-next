@@ -5,6 +5,8 @@ export type {
     MonitorEventType,
     MonitorObject,
     MonitorObjectEvent,
+    ObjectDeviceInfo,
+    ObjectFault,
     ObjectZone,
     ObjectZoneSection,
     PublicAccountUser,
@@ -13,6 +15,7 @@ export type {
 } from './contracts';
 export {
     findDemoObjectForUser,
+    getDemoDiagnosticsForObject,
     getDemoLoginHints,
     getDemoObjectsForUser,
     getDemoZonesForObject,
@@ -42,6 +45,7 @@ export {
 export {getAccountDataSource, type AccountDataSourceKind} from './source-config';
 export {
     findObjectForUser,
+    getDiagnosticsForObject,
     getEventsForObject,
     getObjectsForUser,
     getZonesForObject,

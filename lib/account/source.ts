@@ -2,11 +2,13 @@ import type {
     MonitorObject,
     MonitorObjectEvent,
     MonitorEventType,
+    ObjectFault,
     ObjectZoneSection,
     PublicAccountUser,
 } from './contracts';
 import {
     findDemoObjectForUser,
+    getDemoDiagnosticsForObject,
     getDemoObjectsForUser,
     getDemoZonesForObject,
     verifyDemoCredentials,
@@ -16,6 +18,7 @@ import {getDemoEventsForObject, isMonitorEventType} from './demo-events';
 import {createSessionToken} from './session';
 import {
     findGeoritmObjectForUser,
+    getGeoritmDiagnosticsForObject,
     getGeoritmEventsForObject,
     getGeoritmObjectsForUser,
     getGeoritmZonesForObject,
@@ -89,6 +92,17 @@ export const getZonesForObject = async (objectId: string): Promise<ObjectZoneSec
     getAccountDataSource() === 'georitm'
         ? getGeoritmZonesForObject(objectId)
         : getDemoZonesForObject(objectId);
+
+/**
+ * Активные неисправности оборудования объекта (E4.2). Вызывается после
+ * проверки принадлежности объекта; оба источника дополнительно проверяют
+ * доступ сами. Ошибка получения пробрасывается как исключение — пустой
+ * список означает только явно пустой ответ источника.
+ */
+export const getDiagnosticsForObject = async (objectId: string): Promise<ObjectFault[]> =>
+    getAccountDataSource() === 'georitm'
+        ? getGeoritmDiagnosticsForObject(objectId)
+        : getDemoDiagnosticsForObject(objectId);
 
 /**
  * События объекта (от новых к старым) или null, если источник пока не

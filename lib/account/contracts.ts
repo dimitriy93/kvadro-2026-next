@@ -18,6 +18,38 @@ export type FireAlarmState = 'normal' | 'alarm' | 'fault' | 'maintenance' | 'unk
 export type ConnectionState = 'online' | 'unstable' | 'offline';
 
 /**
+ * Сведения о приборе (контрольной панели) объекта. Whitelist-проекция
+ * GEORITM devices[]: модель, короткое имя и прошивка. Остальные поля
+ * записи прибора (включая imei) в DTO не переносятся.
+ */
+export interface ObjectDeviceInfo {
+    name: string;
+    /** Короткое имя модели, если задано. */
+    shortName?: string;
+    /** Версия прошивки прибора, если известна. */
+    firmware?: string;
+}
+
+/**
+ * Активная неисправность оборудования объекта (GEORITM obj-faults/).
+ *
+ * `message` — текст, предоставленный сервером GEORITM; семантика `code`
+ * справочником не документирована (кроме примеров), поэтому UI показывает
+ * только текст сервера и код во второстепенном виде.
+ */
+export interface ObjectFault {
+    id: string;
+    /** Код неисправности GEORITM. */
+    code: number;
+    /** Текст неисправности от сервера (рус.). */
+    message: string;
+    /** Номер раздела, если известен. */
+    areaNum?: number;
+    /** Номер зоны, если известен. */
+    zoneNum?: number;
+}
+
+/**
  * Объект мониторинга.
  *
  * `id` — внутренний идентификатор кабинета; для GEORITM это строка от
@@ -34,6 +66,8 @@ export interface MonitorObject {
     address: string;
     /** Внешний номер объекта (GEORITM extId), если известен. */
     extId?: number;
+    /** Прибор объекта, если источник сообщил; иначе undefined — UI не показывает карточку прибора. */
+    device?: ObjectDeviceInfo;
     securityAlarm: SecurityAlarmState;
     fireAlarm: FireAlarmState;
     connection: ConnectionState;
