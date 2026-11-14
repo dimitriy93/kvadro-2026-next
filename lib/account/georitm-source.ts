@@ -1,9 +1,11 @@
 import {cookies} from 'next/headers';
+import {cache} from 'react';
 import type {
     MonitorEventType,
     MonitorObject,
     MonitorObjectEvent,
     ObjectZone,
+    ObjectZoneSection,
     PublicAccountUser,
     SecurityAlarmState,
 } from './contracts';
@@ -234,20 +236,27 @@ const toMonitorObject = (object: GeoritmObjectSummary): MonitorObject => ({
 /**
  * Плоский список объектов пользователя из дерева GEORITM.
  * Один запрос objects/objects-tree-set/ — без обхода объектов.
+ *
+ * cache() — дедупликация в рамках одного серверного рендера (не
+ * долгоживущий кэш): generateMetadata, тело страницы и зоны объекта
+ * за один запрос к GEORITM выполняют tree-set/ один раз.
  */
-const fetchOwnedObjects = async (basic: string): Promise<GeoritmObjectSummary[]> =>
-    flattenGeoritmTree(await georitmTreeSet(basic));
+const fetchOwnedObjects = cache(async (basic: string): Promise<GeoritmObjectSummary[]> =>
+    flattenGeoritmTree(await georitmTreeSet(basic)),
+);
 
 /**
  * Объект по id с обогащением: obj/ (детали) и при отсутствии objectState —
  * objects/state/ по IMEI и objects/get-status/. Ошибка любого вызова —
  * исключение (страница показывает деградацию), не пустой список.
+ * Дедупликация в рамках рендера — см. fetchOwnedObjects.
  */
-const fetchOwnedObject = async (
-    basic: string,
-    owned: GeoritmObjectSummary[],
-    objectId: string,
-): Promise<MonitorObject | null> => {
+const fetchOwnedObject = cache(
+    async (
+        basic: string,
+        owned: GeoritmObjectSummary[],
+        objectId: string,
+    ): Promise<MonitorObject | null> => {
     const fromTree = owned.find((object) => String(object.id) === objectId);
     if (!fromTree) {
         return null;
@@ -291,63 +300,93 @@ const fetchOwnedObject = async (
     }
 
     return toMonitorObject(detail);
-};
+    },
+);
 
 /**
- * Зоны объекта из obj-card/ (подтверждён на тестовом сервере).
+ * Истинность флага GEORITM: у зон hasAlarm/hasFault — Boolean, у разделов —
+ * Integer 0/1/2 (0 нет, 1 все зоны, 2 частично, «Georitm REST API.docx»,
+ * obj-details «Разделы - areas»). Любое значение > 0 означает наличие
+ * тревоги/неисправности хотя бы в одной зоне; прочие типы не считаются
+ * истиной, а отсутствием данных.
+ */
+const georitmFlagSet = (value: boolean | number | undefined): boolean =>
+    value === true || (typeof value === 'number' && value > 0);
+
+/**
+ * Состояние по флагам тревоги/неисправности и признаку охраны:
+ * тревога > неисправность > охрана. Это приближение по документированным
+ * полям (детальные биты — только obj-scan/) и подлежит уточнению
+ * с поставщиком.
+ */
+const zoneState = (
+    hasAlarm: boolean | number | undefined,
+    hasFault: boolean | number | undefined,
+    guarded: boolean,
+): SecurityAlarmState => {
+    if (georitmFlagSet(hasAlarm)) {
+        return 'alarm';
+    }
+    if (georitmFlagSet(hasFault)) {
+        return 'fault';
+    }
+    return guarded ? 'armed' : 'disarmed';
+};
+
+/** Имя раздела/зоны для отображения: пустые строки и null — признак отсутствия имени. */
+const displayName = (raw: string | undefined, fallbackPrefix: string, num: number | undefined): string =>
+    typeof raw === 'string' && raw.trim().length > 0
+        ? raw
+        : `${fallbackPrefix} ${num ?? '?'}`;
+
+/**
+ * Разделы и зоны объекта из obj-card/ (подтверждён на тестовом сервере).
  *
  * Разделы (areas) и их зоны (areas[].zones[]) — шлейфы охранно-пожарного
  * оборудования; геозоны (zones/) — другая сущность, здесь не используется.
+ * Раздел сохраняется и с пустым zones — он существует и имеет состояние.
  *
  * Классификация «охрана/пожар» на уровне зоны в GEORITM отсутствует
  * (вопрос B7) — все зоны маппятся как охранные. Состояние зоны: тревога >
- * неисправность > охрана раздела. Это приближение по документированным
- * полям и подлежит уточнению с поставщиком.
+ * неисправность > охрана раздела (у зоны собственного признака охраны нет).
  */
-const toZones = (card: GeoritmObjectCard): ObjectZone[] => {
-    const zones: ObjectZone[] = [];
+const toZones = (card: GeoritmObjectCard): ObjectZoneSection[] => {
+    const sections: ObjectZoneSection[] = [];
     const areas = Array.isArray(card.areas) ? card.areas : [];
-
-    const zoneState = (
-        hasAlarm: boolean | undefined,
-        hasFault: boolean | undefined,
-        areaGuarded: boolean,
-    ): SecurityAlarmState => {
-        if (hasAlarm) {
-            return 'alarm';
-        }
-        if (hasFault) {
-            return 'fault';
-        }
-        return areaGuarded ? 'armed' : 'disarmed';
-    };
 
     for (const area of areas) {
         const areaGuarded = area.isGuarded === true;
-        if (area.name || area.num !== undefined) {
-            zones.push({
-                id: `area-${area.id ?? area.num ?? zones.length}`,
-                name: area.name ?? `Раздел ${area.num ?? '?'}`,
-                system: 'security',
-                state: zoneState(
-                    area.hasAlarm === true,
-                    area.hasFault === true,
-                    areaGuarded,
-                ),
-            });
-        }
+        const areaId = area.id ?? area.num;
+
+        const zones: ObjectZone[] = [];
         for (const zone of area.zones ?? []) {
             const georitmZone: GeoritmAreaZone = zone;
+            const zoneNum = typeof georitmZone.num === 'number' ? georitmZone.num : undefined;
             zones.push({
-                id: `zone-${georitmZone.id ?? georitmZone.num ?? zones.length}`,
-                name: georitmZone.name ?? `Зона ${georitmZone.num ?? '?'}`,
+                id: `zone-${georitmZone.id ?? zoneNum ?? zones.length}`,
+                num: zoneNum,
+                comment: typeof georitmZone.comment === 'string' && georitmZone.comment.trim().length > 0
+                    ? georitmZone.comment
+                    : undefined,
+                name: displayName(georitmZone.name, 'Зона', zoneNum),
                 system: 'security',
-                state: zoneState(georitmZone.hasAlarm === true, georitmZone.hasFault === true, areaGuarded),
+                state: zoneState(georitmZone.hasAlarm, georitmZone.hasFault, areaGuarded),
             });
         }
+
+        sections.push({
+            id: `area-${areaId ?? sections.length}`,
+            num: typeof area.num === 'number' ? area.num : undefined,
+            comment: typeof area.comment === 'string' && area.comment.trim().length > 0
+                ? area.comment
+                : undefined,
+            name: displayName(area.name, 'Раздел', typeof area.num === 'number' ? area.num : undefined),
+            state: zoneState(area.hasAlarm, area.hasFault, areaGuarded),
+            zones,
+        });
     }
 
-    return zones;
+    return sections;
 };
 
 /** Обезличенная проекция obj-card/: только то, что нужно кабинету. */
@@ -363,6 +402,7 @@ const filterSensitiveCard = (card: GeoritmObjectCard): GeoritmObjectCard => ({
             num: area.num,
             id: area.id,
             name: area.name,
+            comment: area.comment,
             isGuarded: area.isGuarded,
             hasFault: area.hasFault,
             hasAlarm: area.hasAlarm,
@@ -371,6 +411,7 @@ const filterSensitiveCard = (card: GeoritmObjectCard): GeoritmObjectCard => ({
                     num: zone.num,
                     id: zone.id,
                     name: zone.name,
+                    comment: zone.comment,
                     hasFault: zone.hasFault,
                     hasAlarm: zone.hasAlarm,
                 }))
@@ -418,7 +459,7 @@ export const findGeoritmObjectForUser = async (
     }
 };
 
-export const getGeoritmZonesForObject = async (objectId: string): Promise<ObjectZone[]> => {
+export const getGeoritmZonesForObject = async (objectId: string): Promise<ObjectZoneSection[]> => {
     const auth = await resolveGeoritmAuth();
     if (!auth) {
         return [];

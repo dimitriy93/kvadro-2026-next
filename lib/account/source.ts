@@ -1,4 +1,10 @@
-import type {MonitorObject, MonitorObjectEvent, MonitorEventType, ObjectZone, PublicAccountUser} from './contracts';
+import type {
+    MonitorObject,
+    MonitorObjectEvent,
+    MonitorEventType,
+    ObjectZoneSection,
+    PublicAccountUser,
+} from './contracts';
 import {
     findDemoObjectForUser,
     getDemoObjectsForUser,
@@ -74,11 +80,12 @@ export const findObjectForUser = async (userId: string, objectId: string): Promi
         : findDemoObjectForUser(userId, objectId);
 
 /**
- * Зоны объекта. Вызывается только после проверки принадлежности объекта
- * пользователю (findObjectForUser) — сами зоны доступ не проверяют
- * (соглашение прежнего демо-источника сохранено).
+ * Разделы и зоны объекта. Вызывается только после проверки принадлежности
+ * объекта пользователю (findObjectForUser); источник GEORITM дополнительно
+ * проверяет доступ сам (объект должен быть в выдаче objects-tree-set/
+ * текущего пользователя), демо-источник читает свои фиксированные данные.
  */
-export const getZonesForObject = async (objectId: string): Promise<ObjectZone[]> =>
+export const getZonesForObject = async (objectId: string): Promise<ObjectZoneSection[]> =>
     getAccountDataSource() === 'georitm'
         ? getGeoritmZonesForObject(objectId)
         : getDemoZonesForObject(objectId);

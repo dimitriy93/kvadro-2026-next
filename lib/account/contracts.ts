@@ -44,13 +44,50 @@ export interface MonitorObject {
 export type ZoneSystem = 'security' | 'fire';
 
 /**
- * Зона объекта. Дискриминированное объединение связывает систему зоны
- * с допустимыми состояниями: у охранной и пожарной зоны разные наборы
+ * Зона (шлейф) объекта. Дискриминированное объединение связывает систему
+ * зоны с допустимыми состояниями: у охранной и пожарной зоны разные наборы
  * состояний, смешать их в одном поле невозможно.
+ *
+ * `num` — номер зоны в приборе, `comment` — комментарий GEORITM, если
+ * задан. Классификации «охранная/пожарная» в GEORITM нет (вопрос B7):
+ * у реального источника system всегда 'security'.
  */
 export type ObjectZone =
-    | { id: string; name: string; system: 'security'; state: SecurityAlarmState }
-    | { id: string; name: string; system: 'fire'; state: FireAlarmState };
+    | {
+        id: string;
+        name: string;
+        /** Номер зоны в приборе (GEORITM zones[].num), если известен. */
+        num?: number;
+        /** Комментарий зоны GEORITM, если задан. */
+        comment?: string;
+        system: 'security';
+        state: SecurityAlarmState;
+    }
+    | {
+        id: string;
+        name: string;
+        num?: number;
+        comment?: string;
+        system: 'fire';
+        state: FireAlarmState;
+    };
+
+/**
+ * Раздел объекта (GEORITM areas[]): группа зон охранно-пожарного
+ * оборудования с собственным состоянием охраны. Раздел с пустым
+ * zones — реальная ситуация (раздел без настроенных зон), а не ошибка.
+ */
+export interface ObjectZoneSection {
+    id: string;
+    name: string;
+    /** Номер раздела в приборе (GEORITM areas[].num), если известен. */
+    num?: number;
+    /** Комментарий раздела GEORITM, если задан. */
+    comment?: string;
+    /** Состояние раздела: тревога > неисправность > охрана. */
+    state: SecurityAlarmState;
+    zones: ObjectZone[];
+}
 
 /** Тип записи журнала событий. */
 export type MonitorEventType =

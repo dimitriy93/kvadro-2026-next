@@ -1,5 +1,5 @@
 import {createHash, timingSafeEqual} from 'node:crypto';
-import type {MonitorObject, ObjectZone, PublicAccountUser} from './contracts';
+import type {MonitorObject, ObjectZoneSection, PublicAccountUser} from './contracts';
 
 /**
  * Демонстрационный источник данных личного кабинета.
@@ -70,29 +70,116 @@ const DEMO_OBJECTS: readonly MonitorObject[] = [
 ];
 
 /**
- * Демонстрационные зоны объектов. Состояния зон вымышлены; у каждой зоны
- * явно указана система (охранная/пожарная) и типизированное состояние.
+ * Демонстрационные разделы и зоны объектов. Состояния вымышлены; у каждой
+ * зоны явно указана система (охранная/пожарная) и типизированное состояние.
+ * Структура повторяет модель GEORITM (раздел → зоны) и служит примером
+ * иерархии, но не является данными реального оборудования.
  */
-const DEMO_ZONES: Readonly<Record<string, readonly ObjectZone[]>> = {
+const DEMO_ZONES: Readonly<Record<string, readonly ObjectZoneSection[]>> = {
     'demo-object-magazin-belochka': [
-        {id: 'demo-zone-belochka-1', name: 'Торговый зал', system: 'security', state: 'disarmed'},
-        {id: 'demo-zone-belochka-2', name: 'Склад', system: 'security', state: 'armed'},
-        {id: 'demo-zone-belochka-3', name: 'Подсобное помещение', system: 'security', state: 'fault'},
-        {id: 'demo-zone-belochka-4', name: 'Дымовые извещатели — торговый зал', system: 'fire', state: 'normal'},
-        {id: 'demo-zone-belochka-5', name: 'Дымовые извещатели — склад', system: 'fire', state: 'maintenance'},
+        {
+            id: 'demo-section-belochka-1',
+            num: 1,
+            name: 'Торговый зал',
+            state: 'disarmed',
+            zones: [
+                {id: 'demo-zone-belochka-1', num: 1, name: 'Торговый зал', system: 'security', state: 'disarmed'},
+                {
+                    id: 'demo-zone-belochka-4',
+                    num: 4,
+                    name: 'Дымовые извещатели — торговый зал',
+                    system: 'fire',
+                    state: 'normal',
+                },
+            ],
+        },
+        {
+            id: 'demo-section-belochka-2',
+            num: 2,
+            name: 'Склад',
+            state: 'armed',
+            zones: [
+                {id: 'demo-zone-belochka-2', num: 2, name: 'Склад', system: 'security', state: 'armed'},
+                {
+                    id: 'demo-zone-belochka-5',
+                    num: 5,
+                    name: 'Дымовые извещатели — склад',
+                    system: 'fire',
+                    state: 'maintenance',
+                },
+            ],
+        },
+        {
+            id: 'demo-section-belochka-3',
+            num: 3,
+            name: 'Подсобное помещение',
+            comment: 'Требуется проверка шлейфа',
+            state: 'fault',
+            zones: [
+                {id: 'demo-zone-belochka-3', num: 3, name: 'Подсобное помещение', system: 'security', state: 'fault'},
+            ],
+        },
     ],
     'demo-object-magazin-romashka': [
-        {id: 'demo-zone-romashka-1', name: 'Торговый зал', system: 'security', state: 'armed'},
-        {id: 'demo-zone-romashka-2', name: 'Витрина', system: 'security', state: 'armed'},
-        {id: 'demo-zone-romashka-3', name: 'Зона приёмки товара', system: 'security', state: 'fault'},
-        {id: 'demo-zone-romashka-4', name: 'Тепловые извещатели — торговый зал', system: 'fire', state: 'normal'},
-        {id: 'demo-zone-romashka-5', name: 'Тепловые извещатели — склад', system: 'fire', state: 'maintenance'},
+        {
+            id: 'demo-section-romashka-1',
+            num: 1,
+            name: 'Торговый зал',
+            state: 'armed',
+            zones: [
+                {id: 'demo-zone-romashka-1', num: 1, name: 'Торговый зал', system: 'security', state: 'armed'},
+                {id: 'demo-zone-romashka-2', num: 2, name: 'Витрина', system: 'security', state: 'armed'},
+                {
+                    id: 'demo-zone-romashka-4',
+                    num: 4,
+                    name: 'Тепловые извещатели — торговый зал',
+                    system: 'fire',
+                    state: 'normal',
+                },
+            ],
+        },
+        {
+            id: 'demo-section-romashka-2',
+            num: 2,
+            name: 'Служебные помещения',
+            state: 'armed',
+            zones: [
+                {id: 'demo-zone-romashka-3', num: 3, name: 'Зона приёмки товара', system: 'security', state: 'fault'},
+                {
+                    id: 'demo-zone-romashka-5',
+                    num: 5,
+                    name: 'Тепловые извещатели — склад',
+                    system: 'fire',
+                    state: 'maintenance',
+                },
+            ],
+        },
     ],
     'demo-object-sklad-zapadnyy': [
-        {id: 'demo-zone-sklad-1', name: 'Периметр', system: 'security', state: 'armed'},
-        {id: 'demo-zone-sklad-2', name: 'Пролёт А', system: 'security', state: 'armed'},
-        {id: 'demo-zone-sklad-3', name: 'Пролёт Б', system: 'security', state: 'alarm'},
-        {id: 'demo-zone-sklad-4', name: 'Извещатели — пролёт А', system: 'fire', state: 'fault'},
+        {
+            id: 'demo-section-sklad-1',
+            num: 1,
+            name: 'Периметр',
+            state: 'armed',
+            zones: [{id: 'demo-zone-sklad-1', num: 1, name: 'Периметр', system: 'security', state: 'armed'}],
+        },
+        {
+            id: 'demo-section-sklad-2',
+            num: 2,
+            name: 'Пролёт А',
+            state: 'armed',
+            zones: [
+                {id: 'demo-zone-sklad-2', num: 2, name: 'Пролёт А', system: 'security', state: 'armed'},
+                {id: 'demo-zone-sklad-4', num: 4, name: 'Извещатели — пролёт А', system: 'fire', state: 'fault'},
+            ],
+        },
+        {
+            id: 'demo-section-sklad-3',
+            num: 3,
+            name: 'Пролёт Б',
+            state: 'alarm',
+            zones: [{id: 'demo-zone-sklad-3', num: 3, name: 'Пролёт Б', system: 'security', state: 'alarm'}],
+        },
     ],
 };
 
@@ -160,8 +247,8 @@ export const findDemoObjectForUser = (userId: string, objectId: string): Monitor
     return DEMO_OBJECTS.find((object) => object.id === objectId) ?? null;
 };
 
-/** Зоны объекта. Вызывается только после проверки принадлежности объекта. */
-export const getDemoZonesForObject = (objectId: string): ObjectZone[] => {
+/** Разделы и зоны объекта. Вызывается только после проверки принадлежности объекта. */
+export const getDemoZonesForObject = (objectId: string): ObjectZoneSection[] => {
     return [...(DEMO_ZONES[objectId] ?? [])];
 };
 

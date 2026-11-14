@@ -72,13 +72,57 @@
   color: rgba(var(--ink-rgb), 0.6);
 }
 
+.obj-zones-error {
+  margin: 0;
+  @include font-size(14, 15);
+  color: #f59e0b;
+}
+
+.obj-zones-count {
+  margin: 0;
+  @include font-size(12, 13);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(var(--ink-rgb), 0.5);
+}
+
 .obj-zones {
   margin: 0;
   padding: 0;
   list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Раздел: заголовок с состоянием + вложенный список зон. */
+.obj-zone-section {
   border: 1px solid rgba(var(--ink-rgb), 0.08);
   border-radius: 14px;
+  background: linear-gradient(180deg, rgba(var(--ink-rgb), 0.04), rgba(var(--ink-rgb), 0.02));
   overflow: hidden;
+}
+
+.obj-zone-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 13px 18px;
+}
+
+.obj-zone-section__num {
+  @include font-size(12, 13);
+  font-weight: 400;
+  color: rgba(var(--ink-rgb), 0.55);
+}
+
+.obj-zone-section__zones {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid rgba(var(--ink-rgb), 0.06);
 }
 
 .obj-zone {
@@ -87,7 +131,7 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 13px 18px;
+  padding: 12px 18px 12px 26px;
   border-bottom: 1px solid rgba(var(--ink-rgb), 0.06);
   transition: background 0.2s ease;
 
@@ -122,5 +166,6 @@
 @media (max-width: 640px) {
   .obj-zone {
     align-items: flex-start;
+    padding-left: 18px;
   }
 }

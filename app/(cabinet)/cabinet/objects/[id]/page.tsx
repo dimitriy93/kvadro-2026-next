@@ -1,6 +1,7 @@
 import {Metadata} from 'next';
 import {notFound, redirect} from 'next/navigation';
 import {findObjectForUser, getAccountDataSource, getZonesForObject, getSessionUser} from '@/lib/account';
+import type {ObjectZoneSection} from '@/lib/account';
 import {cabinet} from '@/config/routes/cabinet.routes';
 import {ObjectStateView} from './ui/object-state.ui';
 
@@ -34,12 +35,21 @@ export default async function ObjectStatePage({params}: ObjectPageProps) {
         notFound();
     }
 
-    const zones = await getZonesForObject(object.id);
+    // Ошибка загрузки зон не должна ронять всю карточку объекта: секция
+    // покажет сообщение об ошибке, остальная страница остаётся рабочей.
+    let zones: ObjectZoneSection[] = [];
+    let zonesLoadFailed = false;
+    try {
+        zones = await getZonesForObject(object.id);
+    } catch {
+        zonesLoadFailed = true;
+    }
 
     return (
         <ObjectStateView
             object={object}
             zones={zones}
+            zonesLoadFailed={zonesLoadFailed}
             isDemoData={getAccountDataSource() === 'demo'}
         />
     );

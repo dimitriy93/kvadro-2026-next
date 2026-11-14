@@ -6,6 +6,7 @@ export type {
     MonitorObject,
     MonitorObjectEvent,
     ObjectZone,
+    ObjectZoneSection,
     PublicAccountUser,
     SecurityAlarmState,
     ZoneSystem,
