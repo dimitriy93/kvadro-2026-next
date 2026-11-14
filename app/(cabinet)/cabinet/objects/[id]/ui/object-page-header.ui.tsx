@@ -3,7 +3,7 @@ import {cabinet, cabinetObjectRoute} from '@/config/routes/cabinet.routes';
 import type {MonitorObject} from '@/lib/account';
 import './object-page-header.styles.scss';
 
-export type ObjectPageTab = 'state' | 'events' | 'map';
+export type ObjectPageTab = 'state' | 'events' | 'map' | 'reports';
 
 interface IObjectPageHeaderProps {
     object: MonitorObject;
@@ -16,6 +16,7 @@ const TABS: ReadonlyArray<{id: ObjectPageTab; title: string}> = [
     {id: 'state', title: 'Состояние'},
     {id: 'events', title: 'События'},
     {id: 'map', title: 'Карта'},
+    {id: 'reports', title: 'Отчёты'},
 ];
 
 /**

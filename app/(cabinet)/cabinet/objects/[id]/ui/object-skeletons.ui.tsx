@@ -6,6 +6,7 @@ const TABS: ReadonlyArray<{id: ObjectPageTab; title: string}> = [
     {id: 'state', title: 'Состояние'},
     {id: 'events', title: 'События'},
     {id: 'map', title: 'Карта'},
+    {id: 'reports', title: 'Отчёты'},
 ];
 
 interface IObjectPageSkeletonProps {

@@ -6,6 +6,8 @@ import type {
     MonitorObjectEvent,
     ObjectDeviceInfo,
     ObjectFault,
+    ObjectReportFile,
+    ObjectReportRequest,
     ObjectZone,
     ObjectZoneSection,
     PublicAccountUser,
@@ -20,6 +22,7 @@ import {
 import {getAlertTemplatesByCode} from '@/lib/georitm/alert-template-cache';
 import {
     GeoritmApiError,
+    callGeoritmReport,
     flattenGeoritmTree,
     georitmHistoryByObject,
     georitmLogin,
@@ -808,6 +811,99 @@ export const getGeoritmEventsForObject = async (
         return eventType
             ? sorted.filter((event) => event.type === eventType)
             : sorted;
+    } catch (error) {
+        if (error instanceof GeoritmApiError && error.isUnauthorized) {
+            deleteSession(auth.sessionId);
+        }
+        throw error;
+    }
+};
+
+// ——————————————————————————— Отчёты объекта (E4.3) ————————
+
+/** Тайм-аут формирования отчёта: синхронная генерация дольше обычного вызова. */
+const REPORT_TIMEOUT_MS = 30_000;
+
+/**
+ * Подтверждённые типы отчётов (E4.3): проверены на сервере 2.27.0
+ * (ALERTSUM/ALERTS json; ALERTSUM также pdf/excel). Метод reports/ со
+ * списком типов на сервере недоступен — белый список задаётся здесь,
+ * UI других типов предложить не может.
+ */
+const GEORITM_REPORT_TYPES: Readonly<Record<ObjectReportRequest['type'], {
+    georitmType: string;
+    title: string;
+}>> = {
+    'alerts-summary': {georitmType: 'ALERTSUM', title: 'Сводный отчёт по событиям и тревогам'},
+    'alerts-events': {georitmType: 'ALERTS', title: 'События и тревоги'},
+};
+
+const REPORT_EXTENSIONS: Readonly<Record<ObjectReportRequest['format'], string>> = {
+    pdf: 'pdf',
+    excel: 'xlsx',
+};
+
+const REPORT_CONTENT_TYPES: Readonly<Record<ObjectReportRequest['format'], string>> = {
+    pdf: 'application/pdf',
+    excel: 'application/vnd.ms-excel',
+};
+
+/**
+ * Отчёт объекта в файловом формате (reports/{type}/{format}, синхронное
+ * формирование — ответ и есть файл). Доступ — как в остальных методах:
+ * объект должен присутствовать в выдаче objects-tree-set/ текущего
+ * пользователя. Это обязательно и до вызова отчёта: сервер GEORITM на
+ * неизвестный objectId отвечает HTTP 401 «Invalid username or wrong
+ * password» (наблюдение 2.27.0), и без собственной проверки владения
+ * запрос чужого объекта отзывал бы сессию кабинета.
+ *
+ * 401 по подтверждённому владению объекту обрабатывается как обычная
+ * утрата credentials: сессия отзывается, ошибка пробрасывается.
+ */
+export const getGeoritmReportForObject = async (
+    objectId: string,
+    request: ObjectReportRequest,
+): Promise<ObjectReportFile> => {
+    const auth = await resolveGeoritmAuth();
+    if (!auth) {
+        throw new GeoritmApiError('network', null, null, 'Нет активной сессии GEORITM');
+    }
+
+    try {
+        const owned = await fetchOwnedObjects(auth.basic);
+        const target = owned.find((object) => String(object.id) === objectId);
+        if (!target) {
+            // Чужой и несуществующий объект неотличимы; вызов reports/ не выполняется.
+            throw new GeoritmApiError('http', 404, null, 'Объект не найден среди доступных пользователю');
+        }
+
+        const meta = GEORITM_REPORT_TYPES[request.type];
+        // Календарные дни МСК разворачиваются в границы суток; формат
+        // documented 'YYYY-MM-dd HH:mm:ss', tzId подтверждён на сервере.
+        const file = await callGeoritmReport(
+            meta.georitmType,
+            request.format,
+            {
+                objectId: [target.id],
+                from: `${request.from} 00:00:00`,
+                to: `${request.to} 23:59:59`,
+                tzId: 'Europe/Moscow',
+                sort: 'name',
+                scode: 'YDX',
+                ...(request.type === 'alerts-events' ? {alertGroupId: [1, 2, 3, 4, 5, 6]} : {}),
+            },
+            auth.basic,
+            REPORT_TIMEOUT_MS,
+        );
+
+        return {
+            filename: `${meta.title} — ${target.name ?? `объект ${target.id}`} — ${request.from}_${request.to}.${REPORT_EXTENSIONS[request.format]}`,
+            // Содержимое ответа GEORITM соответствует запрошенному формату;
+            // Content-Type задаём статически по формату, заголовки сервера
+            // (включая Content-Disposition) наружу не пробрасываются.
+            contentType: REPORT_CONTENT_TYPES[request.format],
+            content: file.content,
+        };
     } catch (error) {
         if (error instanceof GeoritmApiError && error.isUnauthorized) {
             deleteSession(auth.sessionId);

@@ -164,6 +164,50 @@ export interface MonitorObjectEvent {
 }
 
 /**
+ * Тип отчёта объекта, разрешённый в кабинете (E4.3). Белый список —
+ * только типы, подтверждённые на реальном сервере GEORITM 2.27.0
+ * (метод reports/ со списком типов на сервере недоступен). Каждому типу
+ * соответствует метод reports/{GEORITM_TYPE}/{format} из документации.
+ */
+export type ObjectReportType =
+    /** Сводный отчёт по событиям и тревогам (GEORITM ALERTSUM). */
+    | 'alerts-summary'
+    /** События и тревоги — детальный отчёт (GEORITM ALERTS). */
+    | 'alerts-events';
+
+/**
+ * Формат файла отчёта. Подтверждены на сервере для ALERTSUM (PDF и
+ * XLSX-байты); для ALERTS механизм тот же по документации.
+ */
+export type ObjectReportFormat = 'pdf' | 'excel';
+
+/** Параметры запроса отчёта объекта (период — календарные дни, МСК). */
+export interface ObjectReportRequest {
+    type: ObjectReportType;
+    /** Дата начала периода, YYYY-MM-DD. */
+    from: string;
+    /** Дата конца периода, YYYY-MM-DD (включительно). */
+    to: string;
+    /** Файл отчёта; в демонстрационном источнике игнорируется (CSV). */
+    format: ObjectReportFormat;
+}
+
+/**
+ * Готовый файл отчёта (E4.3). Содержимое — байты, курсируют только по
+ * серверной цепочке «источник → API-маршрут → бинарный ответ» и никогда
+ * не сериализуются в JSON DTO браузера.
+ *
+ * `filename` — имя файла для Content-Disposition (строит источник,
+ * маршруты только кодируют); `contentType` — MIME-тип для ответа
+ * (у демо-источника text/csv, у GEORITM — по формату отчёта).
+ */
+export interface ObjectReportFile {
+    filename: string;
+    contentType: string;
+    content: Uint8Array;
+}
+
+/**
  * Пользователь кабинета без секретных полей — безопасен для отдачи
  * в API-ответах и на серверных страницах.
  */

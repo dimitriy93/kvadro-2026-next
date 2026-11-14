@@ -18,4 +18,10 @@ export const cabinetObjectRoute = (objectId: string) => ({
   state: `/cabinet/objects/${objectId}`,
   events: `/cabinet/objects/${objectId}/events`,
   map: `/cabinet/objects/${objectId}/map`,
+  reports: `/cabinet/objects/${objectId}/reports`,
+});
+
+/** Маршруты API конкретного объекта кабинета (E4.3). */
+export const cabinetObjectApiRoute = (objectId: string) => ({
+  reports: `/api/cabinet/objects/${objectId}/reports`,
 });

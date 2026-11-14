@@ -1,0 +1,220 @@
+/* Вкладка «Отчёты» объекта (E4.3). Секции/типографика — общие .obj-section
+   из object-state.styles.scss; здесь — форма выбора отчёта. */
+
+.obj-reports {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.obj-reports__group {
+  margin: 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.obj-reports__legend {
+  padding: 0;
+  @include font-size(12, 13);
+  color: rgba(var(--ink-rgb), 0.55);
+}
+
+.obj-reports__options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.obj-reports__option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "radio label" "radio hint";
+  column-gap: 12px;
+  row-gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid rgba(var(--ink-rgb), 0.14);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+
+  input {
+    grid-area: radio;
+    align-self: center;
+    accent-color: #ff4d00;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+  }
+
+  &:hover {
+    border-color: #ff5a00;
+  }
+
+  &:focus-within {
+    outline: 2px solid #ff5a00;
+    outline-offset: 2px;
+  }
+}
+
+.obj-reports__option--active {
+  border-color: #ff4d00;
+  background: rgba(255, 77, 0, 0.06);
+}
+
+.obj-reports__option-label {
+  grid-area: label;
+  @include font-size(13, 15);
+  color: rgb(var(--ink-rgb));
+  font-weight: 500;
+}
+
+.obj-reports__option-hint {
+  grid-area: hint;
+  @include font-size(11, 12);
+  color: rgba(var(--ink-rgb), 0.55);
+}
+
+.obj-reports__presets {
+  display: flex;
+  gap: 8px;
+}
+
+.obj-reports__preset {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(var(--ink-rgb), 0.18);
+  border-radius: 999px;
+  background: transparent;
+  @include font-size(12, 13);
+  color: rgba(var(--ink-rgb), 0.75);
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    border-color: #ff5a00;
+    color: rgb(var(--ink-rgb));
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ff5a00;
+    outline-offset: 2px;
+  }
+}
+
+.obj-reports__dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.obj-reports__date {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  span {
+    @include font-size(12, 13);
+    color: rgba(var(--ink-rgb), 0.55);
+  }
+
+  input {
+    min-height: 38px;
+    padding: 0 10px;
+    border: 1px solid rgba(var(--ink-rgb), 0.18);
+    border-radius: 10px;
+    background: transparent;
+    color: rgb(var(--ink-rgb));
+    @include font-size(13, 14);
+    font-variant-numeric: tabular-nums;
+    color-scheme: light dark;
+
+    &:focus-visible {
+      outline: 2px solid #ff5a00;
+      outline-offset: 1px;
+    }
+  }
+}
+
+.obj-reports__formats {
+  display: flex;
+  gap: 8px;
+}
+
+.obj-reports__format {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid rgba(var(--ink-rgb), 0.18);
+  border-radius: 999px;
+  @include font-size(12, 13);
+  color: rgba(var(--ink-rgb), 0.75);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+
+  input {
+    accent-color: #ff4d00;
+    width: 15px;
+    height: 15px;
+    margin: 0;
+  }
+
+  &:hover {
+    border-color: #ff5a00;
+    color: rgb(var(--ink-rgb));
+  }
+
+  &:focus-within {
+    outline: 2px solid #ff5a00;
+    outline-offset: 2px;
+  }
+}
+
+.obj-reports__format--active {
+  background: #ff4d00;
+  border-color: #ff4d00;
+  color: var(--text-on-accent);
+  font-weight: 500;
+
+  &:hover {
+    background: #ff6a2c;
+    border-color: #ff6a2c;
+    color: var(--text-on-accent);
+  }
+}
+
+.obj-reports__note {
+  margin: 0;
+  @include font-size(11, 12);
+  color: rgba(var(--ink-rgb), 0.55);
+}
+
+.obj-reports__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.obj-reports__error {
+  margin: 0;
+  @include font-size(12, 13);
+  color: #b71c1c;
+}
+
+.obj-reports__status {
+  margin: 0;
+  @include font-size(12, 13);
+}
+
+.obj-reports__status--success {
+  color: rgba(var(--ink-rgb), 0.7);
+  overflow-wrap: anywhere;
+}
+
+.obj-reports__status--error {
+  color: #b71c1c;
+}

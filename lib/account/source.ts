@@ -3,6 +3,10 @@ import type {
     MonitorObjectEvent,
     MonitorEventType,
     ObjectFault,
+    ObjectReportFile,
+    ObjectReportFormat,
+    ObjectReportRequest,
+    ObjectReportType,
     ObjectZoneSection,
     PublicAccountUser,
 } from './contracts';
@@ -10,6 +14,7 @@ import {
     findDemoObjectForUser,
     getDemoDiagnosticsForObject,
     getDemoObjectsForUser,
+    getDemoReportForObject,
     getDemoZonesForObject,
     verifyDemoCredentials,
     type DemoLoginHint,
@@ -21,6 +26,7 @@ import {
     getGeoritmDiagnosticsForObject,
     getGeoritmEventsForObject,
     getGeoritmObjectsForUser,
+    getGeoritmReportForObject,
     getGeoritmZonesForObject,
     logoutGeoritm,
     verifyGeoritmCredentials,
@@ -124,6 +130,43 @@ export const performLogout = async (): Promise<void> => {
         await logoutGeoritm();
     }
 };
+
+// ————————————————————————————— Отчёты (E4.3) ————————
+
+/**
+ * Ограничение периода отчёта. Лимиты периода в документации GEORITM не
+ * описаны; ограничение задаётся кабинетом, чтобы исключить тяжёлые
+ * запросы (один отчёт на один объект за запрос, максимум месяц).
+ */
+export const REPORT_MAX_PERIOD_DAYS = 31;
+
+/** Белый список типов отчётов кабинета — только подтверждённые API. */
+const KNOWN_REPORT_TYPES: readonly ObjectReportType[] = ['alerts-summary', 'alerts-events'];
+
+/** Форматы файлов отчётов, разрешённые к запросу. */
+const KNOWN_REPORT_FORMATS: readonly ObjectReportFormat[] = ['pdf', 'excel'];
+
+/** Валидация типа отчёта для API-маршрута (?type из запроса браузера). */
+export const isKnownReportType = (value: string): value is ObjectReportType =>
+    (KNOWN_REPORT_TYPES as readonly string[]).includes(value);
+
+/** Валидация формата отчёта для API-маршрута. */
+export const isKnownReportFormat = (value: string): value is ObjectReportFormat =>
+    (KNOWN_REPORT_FORMATS as readonly string[]).includes(value);
+
+/**
+ * Отчёт объекта в виде готового файла. Вызывается только после проверки
+ * принадлежности объекта (findObjectForUser); оба источника дополнительно
+ * проверяют доступ сами. Ошибка получения пробрасывается как исключение —
+ * пустой файл или «успешный» ответ без содержимого не имитируются.
+ */
+export const getReportForObject = async (
+    objectId: string,
+    request: ObjectReportRequest,
+): Promise<ObjectReportFile> =>
+    getAccountDataSource() === 'georitm'
+        ? getGeoritmReportForObject(objectId, request)
+        : getDemoReportForObject(objectId, request);
 
 /** Валидация типа события для фильтра (?type=...). Справочник типов общий для обоих источников. */
 export const isKnownEventType = isMonitorEventType;

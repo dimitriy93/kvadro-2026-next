@@ -416,6 +416,83 @@ export const georitmAlertTemplates = async (basic: string): Promise<GeoritmAlert
 };
 
 /**
+ * Ответ отчёта reports/{type}/{format} в файловом формате (E4.3).
+ * Подтверждено на сервере 2.27.0: PDF — application/pdf, Excel —
+ * XLSX-байты (PK-сигнатура, content-type application/vnd.ms-excel).
+ * Заголовки ответа наружу не пробрасываются — Content-Type/Content-
+ * Disposition для браузера строит серверная сторона кабинета.
+ */
+export interface GeoritmReportFile {
+    contentType: string | null;
+    content: Uint8Array;
+}
+
+/**
+ * Вызов отчёта `reports/{type}/{format}` с файловым ответом (E4.3,
+ * read-only). В отличие от callGeoritm тело не парсится как JSON;
+ * классификация ошибок та же. Заголовки ответа GEORITM (включая
+ * Content-Disposition с фиксированным именем файла) наружу не отдаются.
+ *
+ * Формирование отчёта синхронное и может занимать больше обычного
+ * вызова — тайм-аут задаёт вызывающая сторона.
+ */
+export const callGeoritmReport = async (
+    type: string,
+    format: 'pdf' | 'excel',
+    body: Record<string, unknown>,
+    basic: string,
+    timeoutMs: number,
+): Promise<GeoritmReportFile> => {
+    if (!georitmConfigured()) {
+        throw new GeoritmApiError('network', null, null, 'GEORITM_BASE_URL не задан или не содержит протокол');
+    }
+
+    const url = `${baseUrl()}/restapi/reports/${type}/${format}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    let response: Response;
+    try {
+        response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/pdf, application/vnd.ms-excel, */*',
+                Authorization: `Basic ${basic}`,
+            },
+            body: JSON.stringify(body),
+            signal: controller.signal,
+        });
+    } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+            throw new GeoritmApiError('timeout', null, null, `Тайм-аут ${timeoutMs} мс: reports/${type}/${format}`);
+        }
+        throw new GeoritmApiError('network', null, null, `Нет соединения с GEORITM: reports/${type}/${format}`);
+    } finally {
+        clearTimeout(timer);
+    }
+
+    if (response.status !== 200) {
+        // Документированный формат ошибки — {msg, hdr, data}; оставляем
+        // только msg. Сырое тело (может быть PDF-ошибкой) не сохраняется.
+        let serverMessage: string | null = null;
+        try {
+            const parsed: unknown = JSON.parse(await response.text());
+            if (parsed && typeof parsed === 'object') {
+                const record = parsed as Record<string, unknown>;
+                serverMessage = typeof record.msg === 'string' ? record.msg : null;
+            }
+        } catch {
+            // Тело ошибки не JSON — классифицируем по статусу.
+        }
+        throw new GeoritmApiError('http', response.status, serverMessage, `HTTP ${response.status}: reports/${type}/${format}`);
+    }
+
+    const content = new Uint8Array(await response.arrayBuffer());
+    return {contentType: response.headers.get('content-type'), content};
+};
+
+/**
  * История событий и действий объекта alerts/history-by-obj/ (read-only).
  * Ответ — плоский массив записей ObjectAlert/ObjectAlertLog, порядок
  * не гарантирован (E2.0); сортирует вызывающая сторона.

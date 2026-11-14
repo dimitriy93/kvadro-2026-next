@@ -1,5 +1,14 @@
 import {createHash, timingSafeEqual} from 'node:crypto';
-import type {MonitorObject, ObjectFault, ObjectZoneSection, PublicAccountUser} from './contracts';
+import type {
+    MonitorObject,
+    MonitorObjectEvent,
+    ObjectFault,
+    ObjectReportFile,
+    ObjectReportRequest,
+    ObjectZoneSection,
+    PublicAccountUser,
+} from './contracts';
+import {getDemoEventsForObject} from './demo-events';
 
 /**
  * Демонстрационный источник данных личного кабинета.
@@ -296,6 +305,151 @@ export const getDemoZonesForObject = (objectId: string): ObjectZoneSection[] => 
  */
 export const getDemoDiagnosticsForObject = (objectId: string): ObjectFault[] => {
     return [...(DEMO_DIAGNOSTICS[objectId] ?? [])];
+};
+
+// —————————————————————————— Демонстрационные отчёты (E4.3) ————————
+
+/**
+ * Демонстрационный отчёт: явный маркер «демо» в первой строке и в имени
+ * файла, чтобы вымышленную выгрузку нельзя было принять за файл,
+ * сформированный GEORITM. Формат — CSV (UTF-8 с BOM, разделитель «;»):
+ * без новых зависимостей валидный PDF/XLSX с кириллицей не собрать, а
+ * выдавать их фиктивными версиями недопустимо.
+ */
+const DEMO_REPORT_MARK = 'ДЕМО-ОТЧЁТ (вымышленные данные, не GEORITM)';
+
+const DEMO_REPORT_META: Readonly<Record<ObjectReportRequest['type'], {title: string; fileLabel: string}>> = {
+    'alerts-summary': {title: 'Сводный отчёт по событиям и тревогам', fileLabel: 'svodnyy-otchet'},
+    'alerts-events': {title: 'Отчёт по событиям и тревогам', fileLabel: 'otchet-sobytiya'},
+};
+
+/** Экранирование поля CSV: кавычки внутри удваиваются, поле берётся в кавычки при спецсимволах. */
+const csvField = (value: string): string =>
+    /[";\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+
+const csvRow = (fields: ReadonlyArray<string | number>): string =>
+    fields.map((field) => csvField(String(field))).join(';');
+
+/** Календарная дата события в МСК — период отчёта задан календарными днями МСК. */
+const mskDate = (iso: string): string => {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+    return new Intl.DateTimeFormat('sv-SE', {
+        timeZone: 'Europe/Moscow',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).format(date);
+};
+
+const eventTypeLabel = (event: MonitorObjectEvent): string => {
+    if (event.isUserAction) {
+        return 'Действие оператора';
+    }
+    switch (event.type) {
+        case 'security_alarm':
+        case 'fire_alarm':
+            return 'Тревога';
+        case 'security_fault':
+        case 'fire_fault':
+        case 'fire_maintenance':
+            return 'Неисправность';
+        case 'security_armed':
+            return 'Постановка на охрану';
+        case 'security_disarmed':
+            return 'Снятие с охраны';
+        case 'connection_lost':
+            return 'Потеря связи';
+        case 'connection_restored':
+        case 'restored':
+            return 'Восстановление';
+        default:
+            return 'Система';
+    }
+};
+
+/**
+ * Демонстрационный отчёт объекта по журналу демо-событий за период.
+ * Вызывается только после проверки принадлежности объекта; неизвестный
+ * объект — исключение (маршрут уже отфильтровал чужие id, попадание сюда
+ * означает нарушение инварианта).
+ */
+export const getDemoReportForObject = (
+    objectId: string,
+    request: ObjectReportRequest,
+): ObjectReportFile => {
+    const object = DEMO_OBJECTS.find((candidate) => candidate.id === objectId);
+    if (!object) {
+        throw new Error(`Демо-отчёт: объект ${objectId} не найден в демо-данных`);
+    }
+
+    const meta = DEMO_REPORT_META[request.type];
+    const events = getDemoEventsForObject(objectId)
+        .filter((event) => {
+            const day = mskDate(event.occurredAt);
+            return day >= request.from && day <= request.to;
+        });
+
+    const lines: string[] = [csvRow([DEMO_REPORT_MARK])];
+    lines.push(csvRow(['Отчёт', meta.title]));
+    lines.push(csvRow(['Объект', object.name]));
+    lines.push(csvRow(['Период', `${request.from} — ${request.to}`]));
+
+    if (request.type === 'alerts-summary') {
+        // Сводка за период: количество событий и тревог по календарным дням МСК.
+        const byDay = new Map<string, {alerts: number; alarms: number}>();
+        for (const event of events) {
+            const day = mskDate(event.occurredAt);
+            if (day.length === 0) {
+                continue;
+            }
+            const entry = byDay.get(day) ?? {alerts: 0, alarms: 0};
+            entry.alerts += 1;
+            if (event.isAlarm === true) {
+                entry.alarms += 1;
+            }
+            byDay.set(day, entry);
+        }
+        lines.push('');
+        lines.push(csvRow(['Дата', 'События', 'Тревоги']));
+        let totalAlerts = 0;
+        let totalAlarms = 0;
+        for (const day of [...byDay.keys()].sort()) {
+            const entry = byDay.get(day)!;
+            totalAlerts += entry.alerts;
+            totalAlarms += entry.alarms;
+            lines.push(csvRow([day, entry.alerts, entry.alarms]));
+        }
+        lines.push(csvRow(['Итого', totalAlerts, totalAlarms]));
+    } else {
+        // Детальный журнал за период (от новых к старым — как источник отдаёт).
+        lines.push('');
+        lines.push(csvRow(['Дата и время (МСК)', 'Тип', 'Код', 'Сообщение']));
+        for (const event of events) {
+            lines.push(csvRow([
+                mskDate(event.occurredAt),
+                eventTypeLabel(event),
+                event.code ?? '',
+                event.message,
+            ]));
+        }
+    }
+
+    if (events.length === 0) {
+        lines.push('');
+        lines.push(csvRow(['За выбранный период записей нет']));
+    }
+
+    // BOM — чтобы Excel открыл файл как UTF-8.
+    const content = new TextEncoder().encode(`\uFEFF${lines.join('\r\n')}\r\n`);
+
+    return {
+        filename: `${meta.fileLabel}_${object.name}_${request.from}_${request.to}_demo.csv`,
+        contentType: 'text/csv; charset=utf-8',
+        content,
+    };
 };
 
 export interface DemoLoginHint {
