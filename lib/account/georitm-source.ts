@@ -169,6 +169,20 @@ export const logoutGeoritm = async (): Promise<void> => {
     }
 };
 
+/**
+ * Отзыв сессии кабинета при 401 от GEORITM. Ошибка записи хранилища
+ * (например, ENOSPC/EACCES) не должна ни оставаться необработанным
+ * отклонением промиса, ни маскировать исходную ошибку GEORITM:
+ * логируется и пробрасывается только 401.
+ */
+const revokeSessionOnUnauthorized = async (auth: GeoritmAuth): Promise<void> => {
+    try {
+        await deleteSession(auth.sessionId);
+    } catch (error) {
+        console.error('GEORITM 401: не удалось отозвать сессию кабинета:', error);
+    }
+};
+
 const SESSION_TTL = 8 * 60 * 60;
 
 // ——————————————————————————— Маппинг данных ————————
@@ -580,7 +594,7 @@ export const getGeoritmDiagnosticsForObject = async (objectId: string): Promise<
         return faults;
     } catch (error) {
         if (error instanceof GeoritmApiError && error.isUnauthorized) {
-            deleteSession(auth.sessionId);
+            await revokeSessionOnUnauthorized(auth);
         }
         throw error;
     }
@@ -906,7 +920,7 @@ export const getGeoritmReportForObject = async (
         };
     } catch (error) {
         if (error instanceof GeoritmApiError && error.isUnauthorized) {
-            deleteSession(auth.sessionId);
+            await revokeSessionOnUnauthorized(auth);
         }
         throw error;
     }
