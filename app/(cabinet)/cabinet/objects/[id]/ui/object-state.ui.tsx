@@ -16,6 +16,8 @@ interface IObjectStateViewProps {
     faultsLoadFailed?: boolean;
     /** true — демонстрационный источник данных; false — реальные данные GEORITM. */
     isDemoData: boolean;
+    /** id пользователя кабинета — namespace настроек разделов. */
+    userId?: string;
 }
 
 /** Русское склонение «зона/зоны/зон» (11–14 — «зон»). */
@@ -70,7 +72,7 @@ const faultMeta = (fault: ObjectFault): string | null => {
  * не трактуется как «всё в норме».
  */
 export const ObjectStateView = (
-    {object, zones, zonesLoadFailed = false, faults = [], faultsLoadFailed = false, isDemoData}: IObjectStateViewProps,
+    {object, zones, zonesLoadFailed = false, faults = [], faultsLoadFailed = false, isDemoData, userId}: IObjectStateViewProps,
 ) => {
     const totalZones = zones.reduce((sum, section) => sum + section.zones.length, 0);
     const faultsInconsistent = !faultsLoadFailed
@@ -79,7 +81,7 @@ export const ObjectStateView = (
 
     return (
         <>
-            <ObjectPageHeader object={object} activeTab="state" isDemoData={isDemoData}/>
+            <ObjectPageHeader object={object} activeTab="state" userId={userId} isDemoData={isDemoData}/>
 
             <section className="obj-section" aria-label="Общая информация">
                 <h2 className="obj-section__title">Общая информация</h2>

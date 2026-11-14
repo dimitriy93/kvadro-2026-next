@@ -21,27 +21,34 @@ async function loadOwnedObject(objectId: string) {
         redirect(cabinet.login.href);
     }
 
-    return findObjectForUser(user.id, objectId);
+    // Чужой и несуществующий объект одинаково дают null → 404 без раскрытия.
+    // userId — namespace пользовательских настроек разделов (E7.3.5).
+    const object = await findObjectForUser(user.id, objectId);
+
+    return object ? {object, userId: user.id} : null;
 }
 
 export async function generateMetadata({params}: ObjectReportsPageProps): Promise<Metadata> {
     const {id} = await params;
-    const object = await loadOwnedObject(id);
+    const owned = await loadOwnedObject(id);
 
-    return object ? {title: `${object.name} — отчёты`} : {};
+    return owned ? {title: `${owned.object.name} — отчёты`} : {};
 }
 
 export default async function ObjectReportsPage({params}: ObjectReportsPageProps) {
     const {id} = await params;
-    const object = await loadOwnedObject(id);
+    const owned = await loadOwnedObject(id);
 
-    if (!object) {
+    if (!owned) {
         notFound();
     }
+
+    const {object, userId} = owned;
 
     return (
         <ObjectReportsView
             object={object}
+            userId={userId}
             todayMsk={todayMsk()}
             maxPeriodDays={REPORT_MAX_PERIOD_DAYS}
             isDemoData={getAccountDataSource() === 'demo'}

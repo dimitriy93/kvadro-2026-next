@@ -6,6 +6,8 @@ interface IObjectMapViewProps {
     object: MonitorObject;
     /** true — демонстрационный источник данных; false — реальные данные GEORITM. */
     isDemoData: boolean;
+    /** id пользователя кабинета — namespace настроек разделов. */
+    userId?: string;
 }
 
 /**
@@ -13,9 +15,9 @@ interface IObjectMapViewProps {
  * не связана с реальной геометрией объекта; картографические сервисы
  * не подключаются.
  */
-export const ObjectMapView = ({object, isDemoData}: IObjectMapViewProps) => (
+export const ObjectMapView = ({object, isDemoData, userId}: IObjectMapViewProps) => (
     <>
-        <ObjectPageHeader object={object} activeTab="map" isDemoData={isDemoData}/>
+        <ObjectPageHeader object={object} activeTab="map" userId={userId} isDemoData={isDemoData}/>
 
         <section className="obj-section" aria-label="Карта объекта">
             <h2 className="obj-section__title">Карта объекта</h2>

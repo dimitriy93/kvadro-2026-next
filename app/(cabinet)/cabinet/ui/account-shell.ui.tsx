@@ -48,7 +48,7 @@ export const AccountShell = ({userName, children}: IAccountShellProps) => (
 
         <footer className="acc-footer">
             <div className="container acc-footer__inner">
-                <span>ООО «Квадро-Арсенал» · демонстрационный прототип личного кабинета</span>
+                <span>ООО «Квадро-Арсенал» · Личный кабинет клиента</span>
             </div>
         </footer>
     </div>

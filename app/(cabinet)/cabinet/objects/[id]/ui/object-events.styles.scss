@@ -10,10 +10,150 @@
   flex-wrap: wrap;
 }
 
+.obj-events__head-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .obj-events__count {
   @include font-size(12, 13);
   color: rgba(var(--ink-rgb), 0.5);
   font-variant-numeric: tabular-nums;
+}
+
+/* Выбор количества записей на странице (E7.3.2). */
+.obj-page-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.obj-page-size__label {
+  @include font-size(12, 13);
+  color: rgba(var(--ink-rgb), 0.55);
+  white-space: nowrap;
+}
+
+.obj-page-size__select {
+  min-height: 34px;
+  padding: 0 8px;
+  border: 1px solid rgba(var(--ink-rgb), 0.18);
+  border-radius: 10px;
+  background: transparent;
+  color: rgb(var(--ink-rgb));
+  @include font-size(12, 13);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  color-scheme: light dark;
+
+  &:focus-visible {
+    outline: 2px solid #ff5a00;
+    outline-offset: 1px;
+  }
+}
+
+/* Компактная навигация «|<  <<  1 / 17  >>  >|». */
+.obj-page-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.obj-page-nav__range {
+  @include font-size(12, 13);
+  color: rgba(var(--ink-rgb), 0.5);
+  font-variant-numeric: tabular-nums;
+}
+
+.obj-page-nav__controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.obj-page-nav__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 6px;
+  border: 1px solid rgba(var(--ink-rgb), 0.14);
+  border-radius: 10px;
+  @include font-size(12, 13);
+  color: rgba(var(--ink-rgb), 0.75);
+  text-decoration: none;
+  transition: border-color 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    border-color: #ff5a00;
+    color: rgb(var(--ink-rgb));
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ff5a00;
+    outline-offset: 2px;
+  }
+}
+
+.obj-page-nav__link--disabled {
+  color: rgba(var(--ink-rgb), 0.3);
+  border-color: rgba(var(--ink-rgb), 0.08);
+  pointer-events: none;
+}
+
+.obj-page-nav__icon {
+  width: 16px;
+  height: 16px;
+}
+
+.obj-page-nav__icon--right {
+  transform: scaleX(-1);
+}
+
+.obj-page-nav__bar {
+  display: inline-block;
+  width: 1.5px;
+  height: 12px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.obj-page-nav__first {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.obj-page-nav__status {
+  min-width: 56px;
+  text-align: center;
+  @include font-size(12, 13);
+  color: rgba(var(--ink-rgb), 0.8);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pending-состояние ссылки пагинации: как у чипов фильтра, спиннер
+   раскрывается плавно, прежний список остаётся на месте. */
+.obj-page-nav__content {
+  display: inline-flex;
+  align-items: center;
+}
+
+.obj-page-nav__content--pending .obj-page-nav__icon {
+  animation: obj-chip-spin 0.8s linear infinite;
+}
+
+@media (max-width: 640px) {
+  .obj-page-nav {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .obj-events__filters {

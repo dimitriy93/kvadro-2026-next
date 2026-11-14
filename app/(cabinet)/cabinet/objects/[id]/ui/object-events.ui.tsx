@@ -2,14 +2,27 @@ import type {MonitorEventType, MonitorObject, MonitorObjectEvent} from '@/lib/ac
 import {cabinetObjectRoute} from '@/config/routes/cabinet.routes';
 import {ObjectPageHeader} from './object-page-header.ui';
 import {ObjectEventsFilters, type IObjectEventsFilterItem} from './object-events-filters.ui';
+import {ObjectEventsPageSizeSelect, ObjectEventsPagination} from './object-events-pagination.ui';
 import {formatDateTime} from '@/app/(cabinet)/cabinet/ui/format';
 import type {StateTone} from '@/app/(cabinet)/cabinet/ui/state-meta';
 import './object-events.styles.scss';
 
+/** Данные для управления пагинацией; задаётся серверной страницей журнала. */
+export interface IObjectEventsPagination {
+    basePath: string;
+    activeType: string;
+    page: number;
+    pageSize: number;
+    pageCount: number;
+    total: number;
+}
+
 interface IObjectEventsViewProps {
     object: MonitorObject;
-    /** Отфильтрованные события (от новых к старым). */
+    /** События текущей страницы (от новых к старым). */
     events: MonitorObjectEvent[];
+    /** Общее количество записей журнала после фильтрации. */
+    totalEvents: number;
     /** Типы, встречающиеся в полном журнале объекта — для чипов фильтра. */
     availableTypes: readonly MonitorEventType[];
     /** Активный тип фильтра; undefined — «Все». */
@@ -20,6 +33,10 @@ interface IObjectEventsViewProps {
     footerNote?: string;
     /** true — демонстрационный источник данных; false — реальные данные GEORITM. */
     isDemoData: boolean;
+    /** id пользователя кабинета — namespace настроек разделов. */
+    userId?: string;
+    /** Пагинация; undefined — журнал недоступен у источника данных. */
+    pagination?: IObjectEventsPagination;
 }
 
 const EVENT_META: Record<MonitorEventType, {label: string; tone: StateTone}> = {
@@ -52,10 +69,11 @@ export const DEMO_EVENT_FILTER_ORDER: readonly MonitorEventType[] = [
 ];
 
 /**
- * Журнал событий объекта. Демонстрационные записи от новых к старым;
- * фильтр по типу — серверный, через query-параметр ?type=.
+ * Журнал событий объекта. Записи от новых к старым; фильтр по типу —
+ * серверный, через query-параметр ?type=; пагинация — серверная разбивка
+ * уже полученного журнала, страница и размер хранятся в ?page=/size=.
  */
-export const ObjectEventsView = ({object, events, availableTypes, activeType, unavailableNote, footerNote, isDemoData}: IObjectEventsViewProps) => {
+export const ObjectEventsView = ({object, events, totalEvents, availableTypes, activeType, unavailableNote, footerNote, isDemoData, userId, pagination}: IObjectEventsViewProps) => {
     const routes = cabinetObjectRoute(object.id);
 
     // Чипы фильтра собираются на сервере (подписи из EVENT_META), а навигация
@@ -71,12 +89,21 @@ export const ObjectEventsView = ({object, events, availableTypes, activeType, un
 
     return (
         <>
-            <ObjectPageHeader object={object} activeTab="events" isDemoData={isDemoData}/>
+            <ObjectPageHeader object={object} activeTab="events" userId={userId} isDemoData={isDemoData}/>
 
             <section className="obj-section" aria-label="Журнал событий">
                 <div className="obj-events__head">
                     <h2 className="obj-section__title">Журнал событий</h2>
-                    <span className="obj-events__count">Записей: {events.length}</span>
+                    <div className="obj-events__head-meta">
+                        <span className="obj-events__count">Записей: {totalEvents}</span>
+                        {!unavailableNote && pagination && (
+                            <ObjectEventsPageSizeSelect
+                                basePath={pagination.basePath}
+                                activeType={pagination.activeType}
+                                pageSize={pagination.pageSize}
+                            />
+                        )}
+                    </div>
                 </div>
 
                 <ObjectEventsFilters items={filterItems}/>
@@ -149,6 +176,17 @@ export const ObjectEventsView = ({object, events, availableTypes, activeType, un
                         })}
                     </ol>
                 ))}
+
+                {!unavailableNote && pagination && (
+                    <ObjectEventsPagination
+                        basePath={pagination.basePath}
+                        activeType={pagination.activeType}
+                        page={pagination.page}
+                        pageSize={pagination.pageSize}
+                        pageCount={pagination.pageCount}
+                        total={pagination.total}
+                    />
+                )}
 
                 {footerNote && (
                     <p className="obj-events__note">{footerNote}</p>

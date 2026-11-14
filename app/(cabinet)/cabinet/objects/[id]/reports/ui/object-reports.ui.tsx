@@ -14,6 +14,8 @@ interface IObjectReportsViewProps {
     maxPeriodDays: number;
     /** true — демонстрационный источник данных; false — реальные данные GEORITM. */
     isDemoData: boolean;
+    /** id пользователя кабинета — namespace настроек разделов. */
+    userId?: string;
 }
 
 /**
@@ -77,7 +79,7 @@ const dispositionFilename = (disposition: string | null): string | undefined => 
  * (валидный PDF/XLSX с кириллицей без новых зависимостей не собрать),
  * поэтому выбор формата показывается только для реальных данных.
  */
-export const ObjectReportsView = ({object, todayMsk, maxPeriodDays, isDemoData}: IObjectReportsViewProps) => {
+export const ObjectReportsView = ({object, todayMsk, maxPeriodDays, isDemoData, userId}: IObjectReportsViewProps) => {
     const [reportType, setReportType] = useState<ObjectReportType>('alerts-summary');
     const [from, setFrom] = useState(defaultFrom(todayMsk));
     const [to, setTo] = useState(todayMsk);
@@ -167,7 +169,7 @@ export const ObjectReportsView = ({object, todayMsk, maxPeriodDays, isDemoData}:
 
     return (
         <>
-            <ObjectPageHeader object={object} activeTab="reports" isDemoData={isDemoData}/>
+            <ObjectPageHeader object={object} activeTab="reports" userId={userId} isDemoData={isDemoData}/>
 
             <section className="obj-section" aria-label="Отчёты по объекту">
                 <h2 className="obj-section__title">Отчёты по объекту</h2>

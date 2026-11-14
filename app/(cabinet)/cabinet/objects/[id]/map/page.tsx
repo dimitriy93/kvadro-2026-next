@@ -15,23 +15,29 @@ async function loadOwnedObject(objectId: string) {
         redirect(cabinet.login.href);
     }
 
-    return findObjectForUser(user.id, objectId);
+    // Чужой и несуществующий объект одинаково дают null → 404 без раскрытия.
+    // userId — namespace пользовательских настроек разделов (E7.3.5).
+    const object = await findObjectForUser(user.id, objectId);
+
+    return object ? {object, userId: user.id} : null;
 }
 
 export async function generateMetadata({params}: ObjectMapPageProps): Promise<Metadata> {
     const {id} = await params;
-    const object = await loadOwnedObject(id);
+    const owned = await loadOwnedObject(id);
 
-    return object ? {title: `${object.name} — карта`} : {};
+    return owned ? {title: `${owned.object.name} — карта`} : {};
 }
 
 export default async function ObjectMapPage({params}: ObjectMapPageProps) {
     const {id} = await params;
-    const object = await loadOwnedObject(id);
+    const owned = await loadOwnedObject(id);
 
-    if (!object) {
+    if (!owned) {
         notFound();
     }
 
-    return <ObjectMapView object={object} isDemoData={getAccountDataSource() === 'demo'}/>;
+    const {object, userId} = owned;
+
+    return <ObjectMapView object={object} userId={userId} isDemoData={getAccountDataSource() === 'demo'}/>;
 }

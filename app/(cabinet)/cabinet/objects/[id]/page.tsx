@@ -17,23 +17,28 @@ async function loadOwnedObject(objectId: string) {
     }
 
     // Чужой и несуществующий объект одинаково дают null → 404 без раскрытия.
-    return findObjectForUser(user.id, objectId);
+    // userId — namespace пользовательских настроек разделов (E7.3.5).
+    const object = await findObjectForUser(user.id, objectId);
+
+    return object ? {object, userId: user.id} : null;
 }
 
 export async function generateMetadata({params}: ObjectPageProps): Promise<Metadata> {
     const {id} = await params;
-    const object = await loadOwnedObject(id);
+    const owned = await loadOwnedObject(id);
 
-    return object ? {title: `${object.name} — состояние`} : {};
+    return owned ? {title: `${owned.object.name} — состояние`} : {};
 }
 
 export default async function ObjectStatePage({params}: ObjectPageProps) {
     const {id} = await params;
-    const object = await loadOwnedObject(id);
+    const owned = await loadOwnedObject(id);
 
-    if (!object) {
+    if (!owned) {
         notFound();
     }
+
+    const {object, userId} = owned;
 
     // Ошибки загрузки зон и диагностики не должны ронять карточку объекта:
     // соответствующие секции покажут сообщение, остальная страница остаётся
@@ -49,6 +54,7 @@ export default async function ObjectStatePage({params}: ObjectPageProps) {
     return (
         <ObjectStateView
             object={object}
+            userId={userId}
             zones={zones}
             zonesLoadFailed={zonesResult.status === 'rejected'}
             faults={diagnostics}
