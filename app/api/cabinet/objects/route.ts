@@ -1,12 +1,12 @@
 import {NextResponse} from 'next/server';
-import {getDemoObjectsForUser, getSessionUser} from '@/lib/account';
+import {getObjectsForUser, getSessionUser} from '@/lib/account';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
  * Объекты текущего пользователя. Разрешённый список определяется только
- * серверной функцией getDemoObjectsForUser — клиентский список полномочий
+ * серверной функцией getObjectsForUser — клиентский список полномочий
  * не принимается. Без действительной сессии данные не отдаются.
  */
 export const GET = async (): Promise<NextResponse> => {
@@ -16,5 +16,5 @@ export const GET = async (): Promise<NextResponse> => {
         return NextResponse.json({success: false, error: 'Требуется авторизация'}, {status: 401});
     }
 
-    return NextResponse.json({success: true, objects: getDemoObjectsForUser(user.id)});
+    return NextResponse.json({success: true, objects: await getObjectsForUser(user.id)});
 };

@@ -1,5 +1,6 @@
 import {Metadata} from 'next';
-import {getDemoLoginHints} from '@/lib/account';
+import {getAccountDataSource, getDemoLoginHints} from '@/lib/account';
+import {cabinetPwaMetadata} from '@/config/pwa';
 import {AccountLoginPage} from './ui/login.ui';
 
 export const metadata: Metadata = {
@@ -8,6 +9,10 @@ export const metadata: Metadata = {
         index: false,
         follow: false,
     },
+    // Страница входа — точка входа анонима и первое место, где браузер
+    // предлагает установку PWA: метаданные нужны и здесь, несмотря на
+    // отдельную route group (см. config/pwa.ts).
+    ...cabinetPwaMetadata,
 };
 
 /**
@@ -15,11 +20,15 @@ export const metadata: Metadata = {
  * `app/(cabinet-login)/`, чтобы не наследовать guard защищённой зоны
  * `app/(cabinet)/cabinet/layout.tsx`.
  *
- * Подсказки с тестовыми учётными данными показываются только вне production:
- * в production-сборке страница статична и не содержит демо-паролей.
+ * Подсказки с тестовыми учётными данными показываются только вне production
+ * и только в demo-режиме источника данных: в production-сборке и в режиме
+ * georitm страница статична и не содержит демо-паролей.
  */
 export default function AccountLoginPageRoute() {
-    const demoHints = process.env.NODE_ENV === 'production' ? [] : getDemoLoginHints();
+    const demoHints =
+        process.env.NODE_ENV === 'production' || getAccountDataSource() !== 'demo'
+            ? []
+            : getDemoLoginHints();
 
     return <AccountLoginPage demoHints={demoHints}/>;
 }

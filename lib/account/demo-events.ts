@@ -1,4 +1,4 @@
-import type {DemoEventType, DemoObjectEvent} from './contracts';
+import type {MonitorEventType, MonitorObjectEvent} from './contracts';
 
 /**
  * Демонстрационный журнал событий объектов. Все записи вымышлены и
@@ -6,7 +6,7 @@ import type {DemoEventType, DemoObjectEvent} from './contracts';
  * системы мониторинга или GEORITM.
  */
 
-const DEMO_EVENTS: readonly DemoObjectEvent[] = [
+const DEMO_EVENTS: readonly MonitorObjectEvent[] = [
     // ——— Магазин «Белочка» ———
     {
         id: 'demo-event-belochka-1',
@@ -168,7 +168,7 @@ const DEMO_EVENTS: readonly DemoObjectEvent[] = [
 ];
 
 /** Все допустимые значения типа события (для валидации фильтра). */
-export const DEMO_EVENT_TYPES: readonly DemoEventType[] = [
+export const DEMO_EVENT_TYPES: readonly MonitorEventType[] = [
     'security_armed',
     'security_disarmed',
     'security_alarm',
@@ -178,10 +178,11 @@ export const DEMO_EVENT_TYPES: readonly DemoEventType[] = [
     'fire_maintenance',
     'connection_lost',
     'connection_restored',
+    'restored',
     'system',
 ];
 
-export const isDemoEventType = (value: string): value is DemoEventType =>
+export const isMonitorEventType = (value: string): value is MonitorEventType =>
     (DEMO_EVENT_TYPES as readonly string[]).includes(value);
 
 /**
@@ -190,8 +191,8 @@ export const isDemoEventType = (value: string): value is DemoEventType =>
  */
 export const getDemoEventsForObject = (
     objectId: string,
-    eventType?: DemoEventType,
-): DemoObjectEvent[] => {
+    eventType?: MonitorEventType,
+): MonitorObjectEvent[] => {
     return DEMO_EVENTS
         .filter((event) => event.objectId === objectId)
         .filter((event) => !eventType || event.type === eventType)

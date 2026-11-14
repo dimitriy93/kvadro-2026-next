@@ -49,9 +49,12 @@ export const Footer = () => (
 
           <div className="footer__row">
             <span className="footer__title">Для клиентов</span>
-            <Link href={cabinet.href} className="link">
+            {/* Кабинет пока работает на демонстрационных данных и в production
+                недоступен, поэтому пункт не является ссылкой: тот же класс link
+                для визуального единообразия, но без href и перехода. */}
+            <span className="link" aria-disabled="true">
               {cabinet.title}
-            </Link>
+            </span>
           </div>
         </nav>
 

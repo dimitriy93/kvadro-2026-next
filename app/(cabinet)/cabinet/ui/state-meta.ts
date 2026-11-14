@@ -22,6 +22,7 @@ export interface StateMeta {
 export const SECURITY_STATES: Record<SecurityAlarmState, StateMeta> = {
     armed: {label: 'Под охраной', tone: 'accent'},
     disarmed: {label: 'Снята с охраны', tone: 'neutral'},
+    partial: {label: 'Частично под охраной', tone: 'accent'},
     alarm: {label: 'Тревога', tone: 'danger'},
     fault: {label: 'Неисправность', tone: 'warn'},
 };
@@ -31,6 +32,9 @@ export const FIRE_STATES: Record<FireAlarmState, StateMeta> = {
     alarm: {label: 'Тревога', tone: 'danger'},
     fault: {label: 'Неисправность', tone: 'warn'},
     maintenance: {label: 'Обслуживание', tone: 'info'},
+    // Источник не сообщил достоверное состояние пожарной сигнализации
+    // (у GEORITM нет явного поля «пожар» на уровне объекта — вопрос B7).
+    unknown: {label: 'Нет данных', tone: 'neutral'},
 };
 
 export const CONNECTION_STATES: Record<ConnectionState, StateMeta> = {

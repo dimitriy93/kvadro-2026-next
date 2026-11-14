@@ -3,7 +3,7 @@
 Корпоративный сайт проектно-монтажной организации «Квадро-Арсенал» (г. Электросталь) и личный кабинет клиента мониторинговых услуг.
 
 - **Публичная часть**: лендинг, страницы услуг, блог со статьями из репозитория, документы, контакты, заявки в Telegram с защитой Cloudflare Turnstile.
-- **Личный кабинет** (`/cabinet`): просмотр клиентом состояния своих объектов мониторинга — прототип на демонстрационных данных; целевая интеграция — REST API GEORITM (план в `GEO RITM/`).
+- **Личный кабинет** (`/cabinet`): просмотр клиентом состояния своих объектов мониторинга. Источники данных: `demo` (демонстрационные данные, по умолчанию) и `georitm` — реальный вход через REST API GEORITM (см. `docs/development/12-georitm-integration.md`).
 
 ## Технологии
 
@@ -20,7 +20,7 @@
 
 - Node.js 20+ (разработка ведётся на v24), npm 10+
 - Переменные окружения в `.env.local` (см. [docs/development/04-local-development.md](./docs/development/04-local-development.md)):
-  `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `ACCOUNT_SESSION_SECRET` (для production-кабинета).
+  `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `ACCOUNT_SESSION_SECRET` (production-кабинет), `ACCOUNT_DATA_SOURCE` (`demo`|`georitm`), `GEORITM_BASE_URL` (режим georitm); полный список — [.env.example](./.env.example).
 
 ## Быстрый запуск
 

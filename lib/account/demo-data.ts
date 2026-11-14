@@ -1,5 +1,5 @@
 import {createHash, timingSafeEqual} from 'node:crypto';
-import type {DemoMonitorObject, DemoObjectZone, PublicAccountUser} from './contracts';
+import type {MonitorObject, ObjectZone, PublicAccountUser} from './contracts';
 
 /**
  * Демонстрационный источник данных личного кабинета.
@@ -37,7 +37,7 @@ const DEMO_USERS: readonly DemoAccountUser[] = [
     },
 ];
 
-const DEMO_OBJECTS: readonly DemoMonitorObject[] = [
+const DEMO_OBJECTS: readonly MonitorObject[] = [
     {
         id: 'demo-object-magazin-belochka',
         name: 'Магазин «Белочка»',
@@ -73,7 +73,7 @@ const DEMO_OBJECTS: readonly DemoMonitorObject[] = [
  * Демонстрационные зоны объектов. Состояния зон вымышлены; у каждой зоны
  * явно указана система (охранная/пожарная) и типизированное состояние.
  */
-const DEMO_ZONES: Readonly<Record<string, readonly DemoObjectZone[]>> = {
+const DEMO_ZONES: Readonly<Record<string, readonly ObjectZone[]>> = {
     'demo-object-magazin-belochka': [
         {id: 'demo-zone-belochka-1', name: 'Торговый зал', system: 'security', state: 'disarmed'},
         {id: 'demo-zone-belochka-2', name: 'Склад', system: 'security', state: 'armed'},
@@ -137,7 +137,7 @@ export const verifyDemoCredentials = (login: string, password: string): PublicAc
  * Общая серверная функция разграничения доступа: возвращает только объекты,
  * разрешённые пользователю. Единая точка полномочий для API и страниц кабинета.
  */
-export const getDemoObjectsForUser = (userId: string): DemoMonitorObject[] => {
+export const getDemoObjectsForUser = (userId: string): MonitorObject[] => {
     const user = findDemoUserById(userId);
     if (!user) {
         return [];
@@ -151,7 +151,7 @@ export const getDemoObjectsForUser = (userId: string): DemoMonitorObject[] => {
  * объект неотличимы: в обоих случаях возвращается null — страницы кабинета
  * не раскрывают наличие чужих данных.
  */
-export const findDemoObjectForUser = (userId: string, objectId: string): DemoMonitorObject | null => {
+export const findDemoObjectForUser = (userId: string, objectId: string): MonitorObject | null => {
     const user = findDemoUserById(userId);
     if (!user || !user.objectIds.includes(objectId)) {
         return null;
@@ -161,7 +161,7 @@ export const findDemoObjectForUser = (userId: string, objectId: string): DemoMon
 };
 
 /** Зоны объекта. Вызывается только после проверки принадлежности объекта. */
-export const getDemoZonesForObject = (objectId: string): DemoObjectZone[] => {
+export const getDemoZonesForObject = (objectId: string): ObjectZone[] => {
     return [...(DEMO_ZONES[objectId] ?? [])];
 };
 

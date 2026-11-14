@@ -1,10 +1,11 @@
 export type {
+    AccountSessionKind,
     ConnectionState,
-    DemoEventType,
-    DemoMonitorObject,
-    DemoObjectEvent,
-    DemoObjectZone,
     FireAlarmState,
+    MonitorEventType,
+    MonitorObject,
+    MonitorObjectEvent,
+    ObjectZone,
     PublicAccountUser,
     SecurityAlarmState,
     ZoneSystem,
@@ -20,15 +21,30 @@ export {
 export {
     DEMO_EVENT_TYPES,
     getDemoEventsForObject,
-    isDemoEventType,
+    isMonitorEventType,
 } from './demo-events';
 export {
     ACCOUNT_SESSION_COOKIE_NAME,
     ACCOUNT_SESSION_TTL_SECONDS,
     createSessionToken,
-    getSessionUser,
     getSessionSecret,
+    getSessionUser,
     isDemoLoginEnabled,
     isSecureRequest,
     sessionCookieOptions,
 } from './session';
+export {
+    createGeoritmSession,
+    deleteSession,
+    getSessionRecord,
+} from './session-store';
+export {getAccountDataSource, type AccountDataSourceKind} from './source-config';
+export {
+    findObjectForUser,
+    getEventsForObject,
+    getObjectsForUser,
+    getZonesForObject,
+    isKnownEventType,
+    performLogout,
+    verifyCredentials,
+} from './source';

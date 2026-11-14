@@ -2,4 +2,12 @@ node_modules
 .mimocode
 .idea
 .next
-.env.local
+# Локальные окружения и секреты (пример без значений — .env.example — коммитится).
+.env
+.env.*
+!.env.example
+# Локальная документация REST API GEORITM (данные поставщика; в репозиторий не публикуется).
+GEO RITM/
+.data
+dev.out
+dev.err

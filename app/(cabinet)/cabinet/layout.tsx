@@ -3,6 +3,7 @@ import {Metadata} from 'next';
 import {redirect} from 'next/navigation';
 import {getSessionUser} from '@/lib/account';
 import {cabinet} from '@/config/routes/cabinet.routes';
+import {cabinetPwaMetadata} from '@/config/pwa';
 import {AccountShell} from './ui/account-shell.ui';
 
 export const metadata: Metadata = {
@@ -11,6 +12,9 @@ export const metadata: Metadata = {
         index: false,
         follow: false,
     },
+    // PWA-метаданные кабинета (manifest, Apple standalone): наследуются
+    // всеми защищёнными страницами и не распространяются на публичный сайт.
+    ...cabinetPwaMetadata,
 };
 
 /**

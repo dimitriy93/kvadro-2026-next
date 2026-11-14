@@ -1,13 +1,15 @@
 import Link from 'next/link';
 import {cabinet, cabinetObjectRoute} from '@/config/routes/cabinet.routes';
-import type {DemoMonitorObject} from '@/lib/account';
+import type {MonitorObject} from '@/lib/account';
 import './object-page-header.styles.scss';
 
 export type ObjectPageTab = 'state' | 'events' | 'map';
 
 interface IObjectPageHeaderProps {
-    object: DemoMonitorObject;
+    object: MonitorObject;
     activeTab: ObjectPageTab;
+    /** true — демонстрационный источник данных; false — реальные данные GEORITM. */
+    isDemoData: boolean;
 }
 
 const TABS: ReadonlyArray<{id: ObjectPageTab; title: string}> = [
@@ -20,7 +22,7 @@ const TABS: ReadonlyArray<{id: ObjectPageTab; title: string}> = [
  * Заголовок страницы объекта: возврат к списку, название, адрес,
  * отметка о демо-данных и вкладки «Состояние / События / Карта».
  */
-export const ObjectPageHeader = ({object, activeTab}: IObjectPageHeaderProps) => {
+export const ObjectPageHeader = ({object, activeTab, isDemoData}: IObjectPageHeaderProps) => {
     const routes = cabinetObjectRoute(object.id);
 
     return (
@@ -36,12 +38,14 @@ export const ObjectPageHeader = ({object, activeTab}: IObjectPageHeaderProps) =>
                     <p className="obj-header__address">{object.address}</p>
                 </div>
 
-                <span
-                    className="acc-demo-note"
-                    title="Прототип: значения вымышлены и не являются данными мониторинга"
-                >
-                    Демонстрационные данные
-                </span>
+                {isDemoData && (
+                    <span
+                        className="acc-demo-note"
+                        title="Прототип: значения вымышлены и не являются данными мониторинга"
+                    >
+                        Демонстрационные данные
+                    </span>
+                )}
             </div>
 
             <nav className="obj-tabs" aria-label="Разделы объекта">

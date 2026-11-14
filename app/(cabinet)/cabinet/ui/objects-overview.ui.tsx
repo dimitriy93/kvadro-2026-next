@@ -1,16 +1,18 @@
 import Link from 'next/link';
 import {cabinetObjectRoute} from '@/config/routes/cabinet.routes';
-import type {DemoMonitorObject} from '@/lib/account';
+import type {MonitorObject} from '@/lib/account';
 import {ObjectStateBadge} from './object-state-badge.ui';
 import {formatDateTime} from './format';
 import './objects-overview.styles.scss';
 
 interface IObjectsOverviewProps {
     userName: string;
-    objects: DemoMonitorObject[];
+    objects: MonitorObject[];
+    /** true — демонстрационный источник данных; false — реальные данные GEORITM. */
+    isDemoData: boolean;
 }
 
-export const ObjectsOverview = ({userName, objects}: IObjectsOverviewProps) => (
+export const ObjectsOverview = ({userName, objects, isDemoData}: IObjectsOverviewProps) => (
     <section className="acc-overview">
         <div className="acc-overview__head">
             <div className="acc-overview__heading">
@@ -21,9 +23,11 @@ export const ObjectsOverview = ({userName, objects}: IObjectsOverviewProps) => (
                 </p>
             </div>
 
-            <span className="acc-demo-note" title="Прототип: значения вымышлены и не являются данными мониторинга">
-                Демонстрационные данные
-            </span>
+            {isDemoData && (
+                <span className="acc-demo-note" title="Прототип: значения вымышлены и не являются данными мониторинга">
+                    Демонстрационные данные
+                </span>
+            )}
         </div>
 
         {objects.length === 0 ? (

@@ -1,6 +1,6 @@
 import {Metadata} from 'next';
 import {notFound, redirect} from 'next/navigation';
-import {findDemoObjectForUser, getSessionUser} from '@/lib/account';
+import {findObjectForUser, getAccountDataSource, getSessionUser} from '@/lib/account';
 import {cabinet} from '@/config/routes/cabinet.routes';
 import {ObjectMapView} from '../ui/object-map.ui';
 
@@ -15,7 +15,7 @@ async function loadOwnedObject(objectId: string) {
         redirect(cabinet.login.href);
     }
 
-    return findDemoObjectForUser(user.id, objectId);
+    return findObjectForUser(user.id, objectId);
 }
 
 export async function generateMetadata({params}: ObjectMapPageProps): Promise<Metadata> {
@@ -33,5 +33,5 @@ export default async function ObjectMapPage({params}: ObjectMapPageProps) {
         notFound();
     }
 
-    return <ObjectMapView object={object}/>;
+    return <ObjectMapView object={object} isDemoData={getAccountDataSource() === 'demo'}/>;
 }

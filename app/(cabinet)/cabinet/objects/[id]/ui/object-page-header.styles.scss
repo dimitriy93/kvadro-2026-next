@@ -91,3 +91,22 @@
     color: #ff6a2c;
   }
 }
+
+/* Skeleton-строки шапки: повторяют вертикальный ритм реальных элементов
+   (коробка .obj-back, отступы .obj-header__title и .obj-header__address),
+   чтобы заглушка читалась группами, а не сплошным блоком полос, и её
+   общая геометрия совпадала с будущим контентом — без layout shift. */
+.obj-skel-back {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  margin-bottom: 10px;
+}
+
+.obj-skel-title {
+  margin-top: 6px;
+}
+
+.obj-skel-address {
+  margin-top: 8px;
+}

@@ -1,6 +1,6 @@
 import {Metadata} from 'next';
 import {redirect} from 'next/navigation';
-import {getDemoObjectsForUser, getSessionUser} from '@/lib/account';
+import {getAccountDataSource, getObjectsForUser, getSessionUser} from '@/lib/account';
 import {cabinet} from '@/config/routes/cabinet.routes';
 import {ObjectsOverview} from './ui/objects-overview.ui';
 
@@ -19,7 +19,13 @@ export default async function AccountObjectsPage() {
         redirect(cabinet.login.href);
     }
 
-    const objects = getDemoObjectsForUser(user.id);
+    const objects = await getObjectsForUser(user.id);
 
-    return <ObjectsOverview userName={user.displayName} objects={objects}/>;
+    return (
+        <ObjectsOverview
+            userName={user.displayName}
+            objects={objects}
+            isDemoData={getAccountDataSource() === 'demo'}
+        />
+    );
 }

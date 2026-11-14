@@ -1,6 +1,6 @@
 import {Metadata} from 'next';
 import {notFound, redirect} from 'next/navigation';
-import {findDemoObjectForUser, getDemoZonesForObject, getSessionUser} from '@/lib/account';
+import {findObjectForUser, getAccountDataSource, getZonesForObject, getSessionUser} from '@/lib/account';
 import {cabinet} from '@/config/routes/cabinet.routes';
 import {ObjectStateView} from './ui/object-state.ui';
 
@@ -16,7 +16,7 @@ async function loadOwnedObject(objectId: string) {
     }
 
     // Чужой и несуществующий объект одинаково дают null → 404 без раскрытия.
-    return findDemoObjectForUser(user.id, objectId);
+    return findObjectForUser(user.id, objectId);
 }
 
 export async function generateMetadata({params}: ObjectPageProps): Promise<Metadata> {
@@ -34,7 +34,13 @@ export default async function ObjectStatePage({params}: ObjectPageProps) {
         notFound();
     }
 
-    const zones = getDemoZonesForObject(object.id);
+    const zones = await getZonesForObject(object.id);
 
-    return <ObjectStateView object={object} zones={zones}/>;
+    return (
+        <ObjectStateView
+            object={object}
+            zones={zones}
+            isDemoData={getAccountDataSource() === 'demo'}
+        />
+    );
 }

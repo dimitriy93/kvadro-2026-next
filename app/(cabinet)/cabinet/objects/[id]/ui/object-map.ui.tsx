@@ -1,9 +1,11 @@
-import type {DemoMonitorObject} from '@/lib/account';
+import type {MonitorObject} from '@/lib/account';
 import {ObjectPageHeader} from './object-page-header.ui';
 import './object-map.styles.scss';
 
 interface IObjectMapViewProps {
-    object: DemoMonitorObject;
+    object: MonitorObject;
+    /** true — демонстрационный источник данных; false — реальные данные GEORITM. */
+    isDemoData: boolean;
 }
 
 /**
@@ -11,9 +13,9 @@ interface IObjectMapViewProps {
  * не связана с реальной геометрией объекта; картографические сервисы
  * не подключаются.
  */
-export const ObjectMapView = ({object}: IObjectMapViewProps) => (
+export const ObjectMapView = ({object, isDemoData}: IObjectMapViewProps) => (
     <>
-        <ObjectPageHeader object={object} activeTab="map"/>
+        <ObjectPageHeader object={object} activeTab="map" isDemoData={isDemoData}/>
 
         <section className="obj-section" aria-label="Карта объекта">
             <h2 className="obj-section__title">Карта объекта</h2>

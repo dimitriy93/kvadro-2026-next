@@ -1,4 +1,4 @@
-import type {DemoMonitorObject, DemoObjectZone} from '@/lib/account';
+import type {MonitorObject, ObjectZone} from '@/lib/account';
 import {ObjectPageHeader} from './object-page-header.ui';
 import {ObjectStateBadge} from '@/app/(cabinet)/cabinet/ui/object-state-badge.ui';
 import {ZONE_SYSTEM_NAMES} from '@/app/(cabinet)/cabinet/ui/state-meta';
@@ -6,17 +6,19 @@ import {formatDateTime} from '@/app/(cabinet)/cabinet/ui/format';
 import './object-state.styles.scss';
 
 interface IObjectStateViewProps {
-    object: DemoMonitorObject;
-    zones: DemoObjectZone[];
+    object: MonitorObject;
+    zones: ObjectZone[];
+    /** true — демонстрационный источник данных; false — реальные данные GEORITM. */
+    isDemoData: boolean;
 }
 
 /**
  * Страница состояния объекта: общая информация, системы, зоны.
  * Только отображение — без управления оборудованием.
  */
-export const ObjectStateView = ({object, zones}: IObjectStateViewProps) => (
+export const ObjectStateView = ({object, zones, isDemoData}: IObjectStateViewProps) => (
     <>
-        <ObjectPageHeader object={object} activeTab="state"/>
+        <ObjectPageHeader object={object} activeTab="state" isDemoData={isDemoData}/>
 
         <section className="obj-section" aria-label="Общая информация">
             <h2 className="obj-section__title">Общая информация</h2>

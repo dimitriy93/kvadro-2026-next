@@ -1,6 +1,8 @@
 import {createHmac, timingSafeEqual} from 'node:crypto';
 import {cookies} from 'next/headers';
 import {findPublicDemoUserById} from './demo-data';
+import {getAccountDataSource} from './source-config';
+import {getSessionRecord} from './session-store';
 import type {PublicAccountUser} from './contracts';
 
 /**
@@ -125,11 +127,35 @@ export const verifySessionToken = (token: string): SessionPayload | null => {
 /**
  * Текущий пользователь по cookie-сессии. Единая серверная проверка для
  * защищённых страниц и API. Аноним/недействительная сессия → null.
+ *
+ * Cookie содержит один из двух видов значений:
+ *  - HMAC-токен 'v1.<payload>.<hmac>' — только для demo-источника
+ *    (payload без секретов, состояние на сервере не требуется);
+ *  - непрозрачный идентификатор серверной сессии (префикс 'g', префикс
+ *    выбран отличимым от 'v1') — для входа через GEORITM; проверяется
+ *    по хранилищу session-store, Basic-credentials из cookie не извлекаются.
+ *
+ * Значение не того вида при текущем источнике данных не аутентифицирует:
+ * demo-токен не даёт доступа в georitm-режиме и наоборот.
  */
 export const getSessionUser = async (): Promise<PublicAccountUser | null> => {
     const cookieStore = await cookies();
     const token = cookieStore.get(COOKIE_NAME)?.value;
     if (!token) {
+        return null;
+    }
+
+    const source = getAccountDataSource();
+
+    if (token.startsWith('g')) {
+        if (source !== 'georitm') {
+            return null;
+        }
+        const record = getSessionRecord(token);
+        return record ? record.user : null;
+    }
+
+    if (source !== 'demo') {
         return null;
     }
 
