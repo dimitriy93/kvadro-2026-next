@@ -112,11 +112,14 @@ const load = (): Map<string, StoredSessionRecord> => {
 const persist = (store: Map<string, StoredSessionRecord>): void => {
     const dir = storeDir();
     if (!existsSync(dir)) {
-        mkdirSync(dir, {recursive: true});
+        // 0o700: в записи лежат Basic-credentials — доступ только владельцу,
+        // независимо от umask контейнера.
+        mkdirSync(dir, {recursive: true, mode: 0o700});
     }
     const file = filePath();
     const tmp = `${file}.${process.pid}.tmp`;
-    writeFileSync(tmp, JSON.stringify(Object.fromEntries(store)), 'utf8');
+    // mode действует при создании tmp; rename его сохраняет.
+    writeFileSync(tmp, JSON.stringify(Object.fromEntries(store)), {encoding: 'utf8', mode: 0o600});
     renameSync(tmp, file);
 };
 

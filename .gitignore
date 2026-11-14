@@ -2,6 +2,8 @@ node_modules
 .mimocode
 .idea
 .next
+# Артефакт инкрементальной сборки TypeScript (tsconfig.json → incremental).
+tsconfig.tsbuildinfo
 # Локальные окружения и секреты (пример без значений — .env.example — коммитится).
 .env
 .env.*
