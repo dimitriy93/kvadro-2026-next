@@ -78,9 +78,13 @@ export const mergeObjectSectionsSettings = (raw: unknown): CabinetObjectSections
 export const loadObjectSectionsSettings = (userId: string): CabinetObjectSectionsSettings => {
     try {
         const stored = window.localStorage.getItem(storageKey(userId));
-        return stored ? mergeObjectSectionsSettings(JSON.parse(stored)) : defaultObjectSectionsSettings();
+        const settings = stored ? mergeObjectSectionsSettings(JSON.parse(stored)) : defaultObjectSectionsSettings();
+        lastKnownSettings = settings;
+        return settings;
     } catch {
-        return defaultObjectSectionsSettings();
+        const fallback = defaultObjectSectionsSettings();
+        lastKnownSettings = fallback;
+        return fallback;
     }
 };
 
@@ -94,6 +98,18 @@ export const saveObjectSectionsSettings = (userId: string, settings: CabinetObje
     }
     notifyObjectSectionsSettings(settings);
 };
+
+// ————— Кэш последних известных настроек —————
+// Skeleton навигации объекта рендерится во время переходов между
+// разделами, когда шапка ещё не смонтирована и не может перечитать
+// localStorage (id пользователя ей недоступен). Шапка при загрузке и
+// окно настроек при сохранении обновляют этот кэш; до первой загрузки
+// он пуст — skeleton показывает разделы по умолчанию, ровно как и
+// реальная шапка до применения сохранённых настроек (E7.5).
+let lastKnownSettings: CabinetObjectSectionsSettings | null = null;
+
+/** Последние известные настройки разделов или null — ещё не загружались. */
+export const peekObjectSectionsSettings = (): CabinetObjectSectionsSettings | null => lastKnownSettings;
 
 // ————— Простая подписка между клиентскими компонентами —————
 // Шапка объекта и окно настроек — независимые клиентские компоненты
@@ -110,6 +126,7 @@ export const subscribeObjectSectionsSettings = (listener: SettingsListener): (()
 };
 
 const notifyObjectSectionsSettings = (settings: CabinetObjectSectionsSettings): void => {
+    lastKnownSettings = settings;
     for (const listener of listeners) {
         listener(settings);
     }
