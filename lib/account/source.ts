@@ -1,4 +1,5 @@
 import type {
+    CommunicationDiagnostics,
     MonitorObject,
     MonitorObjectEvent,
     MonitorEventType,
@@ -8,12 +9,15 @@ import type {
     ObjectReportRequest,
     ObjectReportType,
     ObjectZoneSection,
+    PowerDiagnostics,
     PublicAccountUser,
 } from './contracts';
 import {
     findDemoObjectForUser,
+    getDemoChannelsForObject,
     getDemoDiagnosticsForObject,
     getDemoObjectsForUser,
+    getDemoPowerForObject,
     getDemoReportForObject,
     getDemoZonesForObject,
     verifyDemoCredentials,
@@ -23,9 +27,11 @@ import {getDemoEventsForObject, isMonitorEventType} from './demo-events';
 import {createSessionToken} from './session';
 import {
     findGeoritmObjectForUser,
+    getGeoritmChannelsForObject,
     getGeoritmDiagnosticsForObject,
     getGeoritmEventsForObject,
     getGeoritmObjectsForUser,
+    getGeoritmPowerForObject,
     getGeoritmReportForObject,
     getGeoritmZonesForObject,
     logoutGeoritm,
@@ -109,6 +115,28 @@ export const getDiagnosticsForObject = async (objectId: string): Promise<ObjectF
     getAccountDataSource() === 'georitm'
         ? getGeoritmDiagnosticsForObject(objectId)
         : getDemoDiagnosticsForObject(objectId);
+
+/**
+ * Диагностика каналов связи объекта (E9). Вызывается после проверки
+ * принадлежности объекта; источники дополнительно проверяют доступ сами.
+ * Возвращаемый DTO различает «метод не поддерживается сервером»,
+ * «данных нет» и временную ошибку (ошибка пробрасывается вызывающей
+ * стороне — не маскируется под отсутствующие каналы).
+ */
+export const getChannelsForObject = async (objectId: string): Promise<CommunicationDiagnostics> =>
+    getAccountDataSource() === 'georitm'
+        ? getGeoritmChannelsForObject(objectId)
+        : getDemoChannelsForObject(objectId);
+
+/**
+ * Диагностика питания прибора объекта (E9). Для стационарных приборов
+ * GEORITM данные о питании не передаются ('not-provided' — документировано);
+ * проблемы питания видны в активных неисправностях.
+ */
+export const getPowerForObject = async (objectId: string): Promise<PowerDiagnostics> =>
+    getAccountDataSource() === 'georitm'
+        ? getGeoritmPowerForObject(objectId)
+        : getDemoPowerForObject(objectId);
 
 /**
  * События объекта (от новых к старым) или null, если источник пока не

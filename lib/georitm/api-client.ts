@@ -39,6 +39,22 @@ export class GeoritmApiError extends Error {
     get isUnauthorized(): boolean {
         return this.kind === 'http' && this.status === 401;
     }
+
+    /**
+     * Метод отсутствует на установленной версии сервера. Сигнатура
+     * зафиксирована на 2.27.0 (E9) и отличима от остальных ошибок:
+     * HTTP 400 с телом {"status":500,"message":"HTTP 404 Not Found"}
+     * — одинаково для любого тела запроса и стабильно при повторах;
+     * чужой/несуществующий объект при этом даёт 401, а параметры
+     * существующих методов с невалидным телом — иной текст ошибки.
+     * Свойство означает «сервер такой версии не реализует ресурс»,
+     * а не «функция не настроена для объекта».
+     */
+    get isMethodMissing(): boolean {
+        return this.kind === 'http'
+            && this.status === 400
+            && this.serverMessage === 'HTTP 404 Not Found';
+    }
 }
 
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -98,14 +114,20 @@ export const callGeoritm = async <T>(
     const text = await response.text();
 
     if (response.status !== 200) {
-        // Документированный формат ошибки: {msg, hdr, data}. Оставляем
-        // только msg/hdr; сырое тело ошибки не сохраняем и не логируем.
+        // Документированный формат ошибки: {msg, hdr, data}. Фактически
+        // встречается и {status, message} — сигнатура отсутствующего метода
+        // (E9: channels/ на 2.27.0). Оставляем только короткий текст;
+        // сырое тело ошибки не сохраняем и не логируем.
         let serverMessage: string | null = null;
         try {
             const parsed: unknown = JSON.parse(text);
             if (parsed && typeof parsed === 'object') {
                 const record = parsed as Record<string, unknown>;
-                serverMessage = typeof record.msg === 'string' ? record.msg : null;
+                serverMessage = typeof record.msg === 'string' && record.msg.length > 0
+                    ? record.msg
+                    : typeof record.message === 'string' && record.message.length > 0
+                        ? record.message
+                        : null;
             }
         } catch {
             // Тело ошибки не JSON — классифицируем по статусу.
@@ -246,6 +268,62 @@ export interface GeoritmObjectStatus {
     objStatus?: number;
 }
 
+/**
+ * Характеристики канала связи из ответа channels/ (документация «Georitm
+ * REST API.docx», ресурс channels). Поля приходят частично: «level» и
+ * «percent» могут отсутствовать; недостающий уровень добирается отдельным
+ * методом channels/level/ (в кабинете не используется — один запрос).
+ */
+export interface GeoritmChannelSignal {
+    /** SIM: карта установлена (0/1, приходит всегда). */
+    inserted?: number;
+    /** SIM: регистрация в сети (0/1, приходит всегда). */
+    online?: number;
+    /** Уровень сигнала: SIM 0–5, WIFI 0–4 (может отсутствовать). */
+    level?: number;
+    /** Качество сигнала, проценты 0–100 (может отсутствовать). */
+    percent?: number;
+    /** LAN: кабель подключён (0/1). */
+    connected?: number;
+    [key: string]: unknown;
+}
+
+/**
+ * Ответ channels/ (документация). Активный канал — активныйChannel,
+ * состав каналов — channels[]; характеристики передаются не для всех
+ * каналов. E9: на сервере 2.27.0 метод не реализован (сигнатура
+ * «HTTP 404 Not Found») — тип по документации, проверка при появлении.
+ */
+export interface GeoritmChannelsResponse {
+    activeChannel?: string;
+    channels?: string[];
+    SIM_1?: GeoritmChannelSignal;
+    SIM_2?: GeoritmChannelSignal;
+    LAN?: GeoritmChannelSignal;
+    WIFI?: GeoritmChannelSignal;
+    [key: string]: unknown;
+}
+
+/**
+ * Проекция ответа objects/obj-details/ для диагностики питания (E9).
+ * power{} документирован «только для мобильных объектов»: state 0 —
+ * основное питание, 1 — резервное; voltage — бортовое напряжение (В).
+ * Полный ответ содержит персональные и чувствительные поля — наружу
+ * отдаётся только проекция power, выполняет её GeoritmSource.
+ */
+export interface GeoritmObjectDetails {
+    objType?: string;
+    power?: {
+        name?: string;
+        /** 0 — основное питание, 1 — резервное. */
+        state?: number;
+        /** Бортовое напряжение, вольты. */
+        voltage?: number;
+        [key: string]: unknown;
+    };
+    [key: string]: unknown;
+}
+
 /** Ответ objects/state/ — словарь «номер раздела → 1 снят / 2 под охраной». */
 export interface GeoritmPartitionsState {
     state?: Record<string, number>;
@@ -376,6 +454,24 @@ export const georitmObjectCard = async (basic: string, objectId: number): Promis
 
 export const georitmObjectStatus = async (basic: string, objectId: number): Promise<GeoritmObjectStatus> =>
     callGeoritm<GeoritmObjectStatus>('objects/get-status/', {objectId}, basic);
+
+/**
+ * Расширенные сведения об объекте objects/obj-details/ с callDevice=false:
+ * данные отдаются из состояния сервера без обращения к прибору (документация,
+ * параметр callDevice). Используется для диагностики питания (E9); полный
+ * ответ содержит чувствительные поля — проекцию выполняет GeoritmSource.
+ */
+export const georitmObjectDetails = async (basic: string, objectId: number): Promise<GeoritmObjectDetails> =>
+    callGeoritm<GeoritmObjectDetails>('objects/obj-details/', {objectId, callDevice: false}, basic);
+
+/**
+ * Каналы связи и уровни сигнала channels/ (read-only, документация).
+ * E9: на сервере 2.27.0 ресурс не реализован — вызов завершится ошибкой
+ * с isMethodMissing; вызывающая сторона классифицирует её как 'unsupported',
+ * не как ошибку объекта или отсутствие прав.
+ */
+export const georitmChannels = async (basic: string, objectId: number): Promise<GeoritmChannelsResponse> =>
+    callGeoritm<GeoritmChannelsResponse>('channels/', {objectId}, basic);
 
 export const georitmPartitionsState = async (basic: string, imei: string): Promise<GeoritmPartitionsState> =>
     callGeoritm<GeoritmPartitionsState>('objects/state/', {imei}, basic);

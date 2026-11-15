@@ -1,5 +1,6 @@
-import type {MonitorObject, ObjectFault, ObjectZone, ObjectZoneSection} from '@/lib/account';
+import type {CommunicationDiagnostics, MonitorObject, ObjectFault, ObjectZone, ObjectZoneSection, PowerDiagnostics} from '@/lib/account';
 import {ObjectPageHeader} from './object-page-header.ui';
+import {ObjectCommunicationView} from './object-communication.ui';
 import {ObjectStateBadge} from '@/app/(cabinet)/cabinet/ui/object-state-badge.ui';
 import {ZONE_SYSTEM_NAMES} from '@/app/(cabinet)/cabinet/ui/state-meta';
 import {formatDateTime} from '@/app/(cabinet)/cabinet/ui/format';
@@ -14,6 +15,10 @@ interface IObjectStateViewProps {
     faults?: ObjectFault[];
     /** true — неисправности не удалось загрузить; остальные секции страницы рабочие. */
     faultsLoadFailed?: boolean;
+    /** Диагностика каналов связи (E9); null — загрузка завершилась ошибкой. */
+    channels?: CommunicationDiagnostics | null;
+    /** Диагностика питания (E9); null — загрузка завершилась ошибкой. */
+    power?: PowerDiagnostics | null;
     /** true — демонстрационный источник данных; false — реальные данные GEORITM. */
     isDemoData: boolean;
     /** id пользователя кабинета — namespace настроек разделов. */
@@ -72,7 +77,7 @@ const faultMeta = (fault: ObjectFault): string | null => {
  * не трактуется как «всё в норме».
  */
 export const ObjectStateView = (
-    {object, zones, zonesLoadFailed = false, faults = [], faultsLoadFailed = false, isDemoData, userId}: IObjectStateViewProps,
+    {object, zones, zonesLoadFailed = false, faults = [], faultsLoadFailed = false, channels = null, power = null, isDemoData, userId}: IObjectStateViewProps,
 ) => {
     const totalZones = zones.reduce((sum, section) => sum + section.zones.length, 0);
     const faultsInconsistent = !faultsLoadFailed
@@ -165,6 +170,8 @@ export const ObjectStateView = (
                     </div>
                 </div>
             </section>
+
+            <ObjectCommunicationView channels={channels} power={power}/>
 
             <section className="obj-section" aria-label="Зоны объекта">
                 <h2 className="obj-section__title">Зоны объекта</h2>

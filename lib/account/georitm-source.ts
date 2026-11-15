@@ -1,6 +1,8 @@
 import {cookies} from 'next/headers';
 import {cache} from 'react';
 import type {
+    CommunicationChannel,
+    CommunicationDiagnostics,
     MonitorEventType,
     MonitorObject,
     MonitorObjectEvent,
@@ -10,6 +12,7 @@ import type {
     ObjectReportRequest,
     ObjectZone,
     ObjectZoneSection,
+    PowerDiagnostics,
     PublicAccountUser,
     SecurityAlarmState,
 } from './contracts';
@@ -24,10 +27,12 @@ import {
     GeoritmApiError,
     callGeoritmReport,
     flattenGeoritmTree,
+    georitmChannels,
     georitmHistoryByObject,
     georitmLogin,
     georitmLogout,
     georitmObjectCard,
+    georitmObjectDetails,
     georitmObjectFaults,
     georitmObjectStatus,
     georitmObjects,
@@ -36,10 +41,13 @@ import {
     type GeoritmAlertTemplate,
     type GeoritmArea,
     type GeoritmAreaZone,
+    type GeoritmChannelSignal,
+    type GeoritmChannelsResponse,
     type GeoritmDevice,
     type GeoritmObjectAlert,
     type GeoritmObjectAlertLog,
     type GeoritmObjectCard,
+    type GeoritmObjectDetails,
     type GeoritmObjectFault,
     type GeoritmObjectSummary,
 } from '@/lib/georitm/api-client';
@@ -600,7 +608,211 @@ export const getGeoritmDiagnosticsForObject = async (objectId: string): Promise<
     }
 };
 
-// ——————————————————— Нормализация журнала событий (E2.0) ————————
+// ——————————————— Каналы связи и питание (E9) ———————————————
+
+/**
+ * Документированный перечень каналов channels/. Значения вне перечня
+ * в DTO не переносятся: состав каналов строится только из подтверждённых
+ * типов, неизвестные строки сервера отбрасываются, не интерпретируются.
+ */
+const CHANNEL_KINDS = ['SIM_1', 'SIM_2', 'LAN', 'WIFI'] as const;
+
+type ChannelKind = (typeof CHANNEL_KINDS)[number];
+
+const isChannelKind = (value: unknown): value is ChannelKind =>
+    typeof value === 'string' && (CHANNEL_KINDS as readonly string[]).includes(value);
+
+/**
+ * Целое число в границах. Служит для флагов 0/1 и документированных шкал:
+ * level (SIM 0–5, WIFI 0–4), percent (0–100). Значение вне границ или не
+ * число — «данные отсутствуют», не ноль: подменять некорректное значение
+ * нулевым недопустимо.
+ */
+const boundedInt = (value: unknown, min: number, max: number): number | undefined => {
+    if (typeof value !== 'number' || !Number.isInteger(value) || value < min || value > max) {
+        return undefined;
+    }
+    return value;
+};
+
+/** Флаг 0/1 из ответа GEORITM: строго 0/1, прочее — отсутствие данных. */
+const flag01 = (value: unknown): boolean | undefined =>
+    value === 0 ? false : value === 1 ? true : undefined;
+
+/**
+ * Проекция характеристик канала по документированным полям. Каждое поле
+ * переносится только при валидном значении: отсутствующее поле остаётся
+ * undefined, и UI отличает «не передано» от «ноль».
+ */
+const toCommunicationChannel = (kind: ChannelKind, signal: GeoritmChannelSignal | undefined): CommunicationChannel => {
+    if (!signal || typeof signal !== 'object') {
+        // Канал назван в channels[], но характеристики не переданы:
+        // сохраняется только факт его наличия.
+        return {kind};
+    }
+    return {
+        kind,
+        ...(kind === 'SIM_1' || kind === 'SIM_2'
+            ? {
+                inserted: flag01(signal.inserted),
+                online: flag01(signal.online),
+            }
+            : {}),
+        ...(kind === 'LAN' ? {connected: flag01(signal.connected)} : {}),
+        // Шкалы из документации: SIM level 0–5, WIFI 0–4, percent 0–100.
+        ...(kind === 'WIFI' ? {level: boundedInt(signal.level, 0, 4)} : {level: boundedInt(signal.level, 0, 5)}),
+        percent: boundedInt(signal.percent, 0, 100),
+    };
+};
+
+/**
+ * Маппинг ответа channels/ в DTO. Пустой успешный ответ или ответ без
+ * состава каналов — 'absent' (данные отсутствуют в ответе), не «норма»:
+ * объект с каналами связи обязан их передавать, а подмена отсутствия
+ * данных пустым списком скрыла бы проблему.
+ */
+const toCommunicationDiagnostics = (response: GeoritmChannelsResponse): CommunicationDiagnostics => {
+    const declared = Array.isArray(response?.channels) ? response.channels.filter(isChannelKind) : [];
+    const channels: CommunicationChannel[] = [];
+    for (const kind of CHANNEL_KINDS) {
+        // Порядок DTO фиксированный; канал попадает, если передан
+        // характеристиками или назван в channels[].
+        const signal = response?.[kind];
+        if ((signal && typeof signal === 'object') || declared.includes(kind)) {
+            channels.push(toCommunicationChannel(kind, signal));
+        }
+    }
+
+    if (channels.length === 0) {
+        return {availability: 'absent', channels: []};
+    }
+
+    return {
+        availability: 'available',
+        activeChannel: isChannelKind(response?.activeChannel) ? response.activeChannel : undefined,
+        channels,
+        fetchedAt: new Date().toISOString(),
+    };
+};
+
+/**
+ * Единая проверка доступа для диагностики (E9): объект должен быть в выдаче
+ * objects-tree-set/ текущего пользователя — как в diagnostics/events/reports.
+ * Возвращает контекст авторизации или null (чужой/несуществующий объект).
+ */
+const resolveDiagnosticsTarget = async (
+    auth: {basic: string; sessionId: string},
+    objectId: string,
+): Promise<GeoritmObjectSummary | null> => {
+    const owned = await fetchOwnedObjects(auth.basic);
+    return owned.find((object) => String(object.id) === objectId) ?? null;
+};
+
+/**
+ * Кэш классификации «channels/ не реализован на сервере». Свойство версии
+ * сервера, а не объекта: подтверждённая сигнатура кэшируется на 10 минут,
+ * чтобы каждая загрузка карточки не повторяла заведомо неуспешный вызов
+ * (E8: на 2.27.0 channels/ и channels/level/ не реализованы). При смене
+ * сервера кэш истекает и метод проверяется заново.
+ */
+const CHANNELS_UNSUPPORTED_TTL_MS = 10 * 60 * 1000;
+let channelsUnsupportedUntil = 0;
+
+/**
+ * Диагностика каналов связи объекта через channels/ (read-only, E9).
+ *
+ * HTTP 400 с сигнатурой «HTTP 404 Not Found» — метод отсутствует на
+ * установленной версии сервера (зафиксировано на 2.27.0, E9): возвращает
+ * 'unsupported', не ошибку и не пустую диагностику. Прочие ошибки
+ * (сеть, тайм-аут, 5xx, неожиданные 400) пробрасываются — страница
+ * покажет временную недоступность, подмена ошибки отсутствием данных
+ * недопустима. Доступ — как во всех методах: после проверки владения.
+ */
+export const getGeoritmChannelsForObject = async (objectId: string): Promise<CommunicationDiagnostics> => {
+    const auth = await resolveGeoritmAuth();
+    if (!auth) {
+        return {availability: 'unknown', channels: []};
+    }
+
+    try {
+        const target = await resolveDiagnosticsTarget(auth, objectId);
+        if (!target) {
+            // Чужой и несуществующий объект неотличимы; вызов channels/ не выполняется.
+            return {availability: 'unknown', channels: []};
+        }
+
+        if (Date.now() < channelsUnsupportedUntil) {
+            return {availability: 'unsupported', channels: []};
+        }
+
+        try {
+            return toCommunicationDiagnostics(await georitmChannels(auth.basic, target.id));
+        } catch (error) {
+            if (error instanceof GeoritmApiError && error.isMethodMissing) {
+                channelsUnsupportedUntil = Date.now() + CHANNELS_UNSUPPORTED_TTL_MS;
+                return {availability: 'unsupported', channels: []};
+            }
+            throw error;
+        }
+    } catch (error) {
+        if (error instanceof GeoritmApiError && error.isUnauthorized) {
+            await revokeSessionOnUnauthorized(auth);
+        }
+        throw error;
+    }
+};
+
+/**
+ * Диагностика питания прибора (E9). Источник — power{} из objects/obj-details/
+ * (callDevice=false, без обращения к прибору). Для стационарных объектов
+ * поле power документировано как неприменимое («присутствует только для
+ * мобильных объектов») и его отсутствие подтверждено на сервере 2.27.0 —
+ * запрос не выполняется ('not-provided'): проблемы питания стационарных
+ * объектов видны в активных неисправностях (301/302). У мобильного объекта
+ * отсутствие power в ответе — 'absent'.
+ */
+export const getGeoritmPowerForObject = async (objectId: string): Promise<PowerDiagnostics> => {
+    const auth = await resolveGeoritmAuth();
+    if (!auth) {
+        return {availability: 'unknown'};
+    }
+
+    try {
+        const target = await resolveDiagnosticsTarget(auth, objectId);
+        if (!target) {
+            return {availability: 'unknown'};
+        }
+
+        // power{} документирован только для мобильных приборов (objType '0');
+        // кабинет подключает стационарные объекты (groupType=1), но проверка
+        // по фактическому objType сохраняет корректность при расширении.
+        if (target.objType !== '0') {
+            return {availability: 'not-provided'};
+        }
+
+        const details: GeoritmObjectDetails = await georitmObjectDetails(auth.basic, target.id);
+        const power = details?.power;
+        if (!power || typeof power !== 'object') {
+            return {availability: 'absent'};
+        }
+
+        const source = power.state === 0 ? 'main' : power.state === 1 ? 'backup' : undefined;
+        const voltage = typeof power.voltage === 'number' && Number.isFinite(power.voltage) && power.voltage > 0
+            ? power.voltage
+            : undefined;
+        if (source === undefined && voltage === undefined) {
+            // Поле power передано, но без валидных значений — данных нет.
+            return {availability: 'absent'};
+        }
+
+        return {availability: 'available', source, voltage, fetchedAt: new Date().toISOString()};
+    } catch (error) {
+        if (error instanceof GeoritmApiError && error.isUnauthorized) {
+            await revokeSessionOnUnauthorized(auth);
+        }
+        throw error;
+    }
+};
 
 /**
  * ISO 8601 из миллисекунд GEORITM. E2.0: все временные метки

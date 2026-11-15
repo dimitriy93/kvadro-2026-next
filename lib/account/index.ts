@@ -1,6 +1,9 @@
 export type {
     AccountSessionKind,
+    CommunicationChannel,
+    CommunicationDiagnostics,
     ConnectionState,
+    DiagnosticsAvailability,
     FireAlarmState,
     MonitorEventType,
     MonitorObject,
@@ -13,15 +16,18 @@ export type {
     ObjectReportType,
     ObjectZone,
     ObjectZoneSection,
+    PowerDiagnostics,
     PublicAccountUser,
     SecurityAlarmState,
     ZoneSystem,
 } from './contracts';
 export {
     findDemoObjectForUser,
+    getDemoChannelsForObject,
     getDemoDiagnosticsForObject,
     getDemoLoginHints,
     getDemoObjectsForUser,
+    getDemoPowerForObject,
     getDemoReportForObject,
     getDemoZonesForObject,
     verifyDemoCredentials,
@@ -50,9 +56,11 @@ export {
 export {getAccountDataSource, type AccountDataSourceKind} from './source-config';
 export {
     findObjectForUser,
+    getChannelsForObject,
     getDiagnosticsForObject,
     getEventsForObject,
     getObjectsForUser,
+    getPowerForObject,
     getReportForObject,
     getZonesForObject,
     isKnownEventType,

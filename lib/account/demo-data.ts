@@ -1,11 +1,14 @@
 import {createHash, timingSafeEqual} from 'node:crypto';
 import type {
+    CommunicationChannel,
+    CommunicationDiagnostics,
     MonitorObject,
     MonitorObjectEvent,
     ObjectFault,
     ObjectReportFile,
     ObjectReportRequest,
     ObjectZoneSection,
+    PowerDiagnostics,
     PublicAccountUser,
 } from './contracts';
 import {getDemoEventsForObject} from './demo-events';
@@ -35,7 +38,7 @@ const DEMO_USERS: readonly DemoAccountUser[] = [
         login: 'belochka',
         password: 'demo-belochka',
         displayName: 'Директор магазина «Белочка»',
-        objectIds: ['demo-object-magazin-belochka'],
+        objectIds: ['demo-object-magazin-belochka', 'demo-object-office-gvozdika'],
     },
     {
         id: 'demo-user-romashka',
@@ -56,6 +59,16 @@ const DEMO_OBJECTS: readonly MonitorObject[] = [
         fireAlarm: 'normal',
         connection: 'online',
         updatedAt: '2026-10-24T09:40:00+03:00',
+    },
+    {
+        id: 'demo-object-office-gvozdika',
+        name: 'Офис «Гвоздика»',
+        address: 'г. Электросталь, ул. Пионерская, д. 3',
+        device: {name: 'Прибор контроля «Демо-8»', shortName: 'Демо-8', firmware: '0.9.7'},
+        securityAlarm: 'armed',
+        fireAlarm: 'normal',
+        connection: 'online',
+        updatedAt: '2026-10-24T09:20:00+03:00',
     },
     {
         id: 'demo-object-magazin-romashka',
@@ -114,6 +127,55 @@ const DEMO_DIAGNOSTICS: Readonly<Record<string, readonly ObjectFault[]>> = {
             zoneNum: 0,
         },
     ],
+};
+
+/**
+ * Демонстрационная диагностика каналов связи и питания (E9). Структура
+ * повторяет DTO-контракты кабинета; значения вымышлены, но соответствуют
+ * документированным шкалам GEORITM channels/ и power{} (SIM level 0–5,
+ * percent 0–100). Покрывают сценарии: несколько каналов (Белочка),
+ * один канал (Ромашка), данные не передаются прибором (Гвоздика, Склад),
+ * питание передаётся (Белочка), сведения о питании отсутствуют (остальные).
+ */
+const DEMO_CHANNELS: Readonly<Record<string, CommunicationDiagnostics>> = {
+    'demo-object-magazin-belochka': {
+        availability: 'available',
+        activeChannel: 'SIM_1',
+        fetchedAt: '2026-10-24T09:40:00+03:00',
+        channels: [
+            {kind: 'SIM_1', inserted: true, online: true, level: 4, percent: 80},
+            {kind: 'SIM_2', inserted: true, online: false, level: 1, percent: 15},
+            {kind: 'LAN', connected: true},
+        ],
+    },
+    'demo-object-office-gvozdika': {
+        availability: 'not-provided',
+        channels: [],
+    },
+    'demo-object-magazin-romashka': {
+        availability: 'available',
+        activeChannel: 'SIM_1',
+        fetchedAt: '2026-10-24T08:15:00+03:00',
+        channels: [
+            {kind: 'SIM_1', inserted: true, online: true, level: 2, percent: 40},
+        ],
+    },
+    'demo-object-sklad-zapadnyy': {
+        availability: 'not-provided',
+        channels: [],
+    },
+};
+
+const DEMO_POWER: Readonly<Record<string, PowerDiagnostics>> = {
+    'demo-object-magazin-belochka': {
+        availability: 'available',
+        source: 'main',
+        voltage: 12.6,
+        fetchedAt: '2026-10-24T09:40:00+03:00',
+    },
+    'demo-object-office-gvozdika': {availability: 'not-provided'},
+    'demo-object-magazin-romashka': {availability: 'not-provided'},
+    'demo-object-sklad-zapadnyy': {availability: 'not-provided'},
 };
 
 /**
@@ -305,6 +367,24 @@ export const getDemoZonesForObject = (objectId: string): ObjectZoneSection[] => 
  */
 export const getDemoDiagnosticsForObject = (objectId: string): ObjectFault[] => {
     return [...(DEMO_DIAGNOSTICS[objectId] ?? [])];
+};
+
+/**
+ * Диагностика каналов связи объекта (E9). Вызывается после проверки
+ * принадлежности; неизвестный объект — 'unknown' (доступность определить
+ * не удалось), а не «каналов нет»: отсутствие записи в демо-данных не
+ * приравнивается к переданному сервером пустому ответу.
+ */
+export const getDemoChannelsForObject = (objectId: string): CommunicationDiagnostics => {
+    return DEMO_CHANNELS[objectId] ?? {availability: 'unknown', channels: []};
+};
+
+/**
+ * Диагностика питания прибора объекта (E9). Аналогично каналам:
+ * неизвестный объект — 'unknown'.
+ */
+export const getDemoPowerForObject = (objectId: string): PowerDiagnostics => {
+    return DEMO_POWER[objectId] ?? {availability: 'unknown'};
 };
 
 // —————————————————————————— Демонстрационные отчёты (E4.3) ————————

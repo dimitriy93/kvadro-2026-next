@@ -1,0 +1,155 @@
+/* Диагностика каналов связи и питания (E9). Цвета задаются через общую
+   переменную тонов состояний кабинета --acc-state-color — работают и в
+   светлой, и в тёмной теме. */
+
+.obj-comms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.obj-comms__block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 1px solid rgba(var(--ink-rgb), 0.08);
+  border-radius: 14px;
+  background: rgba(var(--ink-rgb), 0.03);
+}
+
+.obj-comms__subtitle {
+  margin: 0;
+  @include font-size(12, 13);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(var(--ink-rgb), 0.55);
+}
+
+.obj-comms__note {
+  margin: 0;
+  @include font-size(14, 15);
+  color: rgba(var(--ink-rgb), 0.65);
+}
+
+.obj-comms__note--warn {
+  color: var(--acc-state-color, #f59e0b);
+}
+
+.obj-comms__fetched {
+  @include font-size(11, 12);
+  color: rgba(var(--ink-rgb), 0.45);
+}
+
+/* Каналы связи: строка «название/описание — состояние». */
+.obj-channels {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.obj-channel {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.06);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.obj-channel__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.obj-channel__name {
+  @include font-size(14, 15);
+  font-weight: 500;
+  color: rgb(var(--ink-rgb));
+}
+
+.obj-channel__active {
+  @include font-size(12, 13);
+  font-weight: 400;
+  color: var(--acc-state-color, #ff5a00);
+}
+
+.obj-channel__type {
+  @include font-size(11, 12);
+  color: rgba(var(--ink-rgb), 0.5);
+}
+
+.obj-channel__signal {
+  @include font-size(11, 12);
+  color: rgba(var(--ink-rgb), 0.6);
+  font-variant-numeric: tabular-nums;
+}
+
+.obj-channel__state {
+  flex-shrink: 0;
+  @include font-size(12, 13);
+  font-weight: 500;
+  color: var(--acc-state-color, rgba(var(--ink-rgb), 0.45));
+
+  &--ok {
+    --acc-state-color: #10b981;
+  }
+
+  &--warn {
+    --acc-state-color: #f59e0b;
+  }
+
+  &--neutral {
+    --acc-state-color: rgba(var(--ink-rgb), 0.45);
+  }
+}
+
+/* Питание: пары «показатель — значение». */
+.obj-power {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.obj-power__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.obj-power__label {
+  @include font-size(12, 13);
+  color: rgba(var(--ink-rgb), 0.55);
+}
+
+.obj-power__value {
+  @include font-size(14, 15);
+  font-weight: 500;
+  color: rgb(var(--ink-rgb));
+  font-variant-numeric: tabular-nums;
+
+  &--ok {
+    color: var(--acc-state-color, #10b981);
+  }
+
+  &--warn {
+    color: var(--acc-state-color, #f59e0b);
+  }
+}
+
+@media (max-width: 640px) {
+  .obj-channel {
+    align-items: flex-start;
+  }
+}
