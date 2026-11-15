@@ -42,6 +42,22 @@ const withStoreLock = async <T>(operation: () => T): Promise<T> => {
  *  - истекшие записи удаляются при загрузке и при создании сессии.
  */
 
+/**
+ * Проекция прав пользователя на управление охраной (E12): вычисляется один
+ * раз при входе из allowedActions ответа users/login/ (коды objects.arm и
+ * objects.disarm) и хранится в записи сессии — полные allowedActions в
+ * кабинете не нужны, а дополнительные вызовы login на каждую операцию
+ * избыточны. Поле опционально: сессии, созданные до E12, его не имеют —
+ * такие записи трактуются как «права неизвестны» (консервативный запрет
+ * управления, кнопки скрыты), а не как отсутствие прав.
+ */
+export interface SessionControlPermissions {
+    /** Код objects.arm присутствует в allowedActions пользователя. */
+    arm: boolean;
+    /** Код objects.disarm присутствует в allowedActions пользователя. */
+    disarm: boolean;
+}
+
 /** Формат записи в хранилище. Доступен только серверному коду. */
 interface StoredSessionRecord {
     /** Выдано, epoch seconds. */
@@ -52,6 +68,8 @@ interface StoredSessionRecord {
     user: PublicAccountUser;
     /** GEORITM Basic (base64(login:password)). Не логировать. */
     georitmBasic: string;
+    /** Проекция прав управления охраной (E12); отсутствует в старых сессиях. */
+    controlPermissions?: SessionControlPermissions;
 }
 
 const FILE_NAME = 'sessions.json';
@@ -132,6 +150,7 @@ export const createGeoritmSession = async (
     user: PublicAccountUser,
     georitmBasic: string,
     ttlSeconds: number,
+    controlPermissions?: SessionControlPermissions,
 ): Promise<string> =>
     withStoreLock(() => {
         const sessionId = `g${randomBytes(32).toString('base64url')}`;
@@ -149,6 +168,7 @@ export const createGeoritmSession = async (
             expiresAt: now + ttlSeconds,
             user,
             georitmBasic,
+            ...(controlPermissions ? {controlPermissions} : {}),
         });
         persist(store);
 

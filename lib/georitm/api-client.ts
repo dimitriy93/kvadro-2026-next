@@ -460,9 +460,63 @@ export const georitmObjectStatus = async (basic: string, objectId: number): Prom
  * данные отдаются из состояния сервера без обращения к прибору (документация,
  * параметр callDevice). Используется для диагностики питания (E9); полный
  * ответ содержит чувствительные поля — проекцию выполняет GeoritmSource.
+ *
+ * E11 (проба 2.27.0): параметр objectId передаётся ТОЛЬКО массивом.
+ * Скалярное значение вызывает HTTP 500 «java.lang.Integer cannot be cast
+ * to java.util.Collection» — сервер приводит параметр к коллекции.
+ * Сериализация массивом проверяется smoke-сценарием scripts/control-smoke.mjs.
  */
 export const georitmObjectDetails = async (basic: string, objectId: number): Promise<GeoritmObjectDetails> =>
-    callGeoritm<GeoritmObjectDetails>('objects/obj-details/', {objectId, callDevice: false}, basic);
+    callGeoritm<GeoritmObjectDetails>('objects/obj-details/', {objectId: [objectId], callDevice: false}, basic);
+
+/**
+ * Разделы объекта objects/obj-areas/ (read-only). Контракт подтверждён
+ * пробой E11 на сервере 2.27.0: флаги isGuarded/hasFault/hasAlarm разделов
+ * приходят всегда (в отличие от obj-details/, где они появляются только
+ * при callDevice=true). Используется для разрешения допустимых разделов
+ * и состояний охраны (E12). Ответ — плоский массив; неожиданный формат —
+ * ошибка, а не пустой список.
+ */
+export const georitmObjectAreas = async (basic: string, objectId: number): Promise<GeoritmArea[]> => {
+    const response = await callGeoritm<GeoritmArea[] | {areas?: GeoritmArea[]}>(
+        'objects/obj-areas/',
+        {objectId},
+        basic,
+    );
+    const areas = Array.isArray(response) ? response : response?.areas;
+    if (!Array.isArray(areas)) {
+        throw new GeoritmApiError('http', 200, null, 'Неожиданный формат objects/obj-areas/');
+    }
+    return areas;
+};
+
+/**
+ * Ответ objects/arm/ и objects/disarm/. Документация: «Результат исполнения
+ * 1-выполнено», прочие значения не документированы. По совокупности с IDP
+ * (E11) значение 1 означает лишь ПРИЁМ команды сервером (в лучшем случае —
+ * передачу прибору) и не является доказательством исполнения: фактическое
+ * состояние подтверждает только objects/state/ и события журнала группы 4.
+ */
+export interface GeoritmCommandResponse {
+    success?: number;
+}
+
+/**
+ * Взятие раздела под охрану objects/arm/ (E12). WRITE-метод: вызывается
+ * исключительно серверным модулем управления охраной при включённом
+ * feature gate GEORITM_CONTROL_ENABLED после проверки владения объектом,
+ * прав и разрешения IMEI/раздела на сервере. Контракт: POST {imei: String,
+ * area: Integer} → {success: Integer}; других параметров у метода нет.
+ */
+export const georitmArm = async (basic: string, imei: string, area: number): Promise<GeoritmCommandResponse> =>
+    callGeoritm<GeoritmCommandResponse>('objects/arm/', {imei, area}, basic);
+
+/**
+ * Снятие раздела с охраны objects/disarm/ (E12). WRITE-метод: ограничения
+ * вызова те же, что у georitmArm. Контракт симметричен objects/arm/.
+ */
+export const georitmDisarm = async (basic: string, imei: string, area: number): Promise<GeoritmCommandResponse> =>
+    callGeoritm<GeoritmCommandResponse>('objects/disarm/', {imei, area}, basic);
 
 /**
  * Каналы связи и уровни сигнала channels/ (read-only, документация).

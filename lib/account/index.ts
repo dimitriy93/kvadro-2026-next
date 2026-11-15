@@ -3,11 +3,17 @@ export type {
     CommunicationChannel,
     CommunicationDiagnostics,
     ConnectionState,
+    ControlAction,
+    ControlAvailability,
+    ControlErrorReason,
+    ControlOperationResult,
+    ControlResult,
     DiagnosticsAvailability,
     FireAlarmState,
     MonitorEventType,
     MonitorObject,
     MonitorObjectEvent,
+    ObjectControlState,
     ObjectDeviceInfo,
     ObjectFault,
     ObjectReportFile,
@@ -16,11 +22,13 @@ export type {
     ObjectReportType,
     ObjectZone,
     ObjectZoneSection,
+    PartitionControlState,
     PowerDiagnostics,
     PublicAccountUser,
     SecurityAlarmState,
     ZoneSystem,
 } from './contracts';
+export {ControlError} from './contracts';
 export {
     findDemoObjectForUser,
     getDemoChannelsForObject,
@@ -55,10 +63,12 @@ export {
 } from './session-store';
 export {getAccountDataSource, type AccountDataSourceKind} from './source-config';
 export {
+    executeObjectControl,
     findObjectForUser,
     getChannelsForObject,
     getDiagnosticsForObject,
     getEventsPageForObject,
+    getObjectControlState,
     getObjectsForUser,
     getPowerForObject,
     getReportForObject,

@@ -21,6 +21,7 @@ import {
     createGeoritmSession,
     deleteSession,
     getSessionRecord,
+    type SessionControlPermissions,
 } from './session-store';
 import {
     fetchEventJournalPage,
@@ -30,6 +31,7 @@ import {
     type JournalEntry,
 } from './event-journal';
 import {getAlertTemplatesByCode} from '@/lib/georitm/alert-template-cache';
+import type {GeoritmControlContext} from './georitm-control';
 import {
     GeoritmApiError,
     callGeoritmReport,
@@ -97,6 +99,8 @@ interface GeoritmAuth {
     basic: string;
     user: PublicAccountUser;
     sessionId: string;
+    /** Проекция прав управления охраной; undefined — сессия до E12. */
+    controlPermissions: SessionControlPermissions | undefined;
 }
 
 /**
@@ -115,7 +119,7 @@ const resolveGeoritmAuth = async (): Promise<GeoritmAuth | null> => {
         return null;
     }
 
-    return {basic: record.georitmBasic, user: record.user, sessionId};
+    return {basic: record.georitmBasic, user: record.user, sessionId, controlPermissions: record.controlPermissions};
 };
 
 /** Результат проверки учётных данных: пользователь + значение cookie-сессии. */
@@ -167,7 +171,19 @@ export const verifyGeoritmCredentials = async (
             : login,
     };
 
-    const sessionValue = await createGeoritmSession(user, basic, SESSION_TTL);
+    // Проекция прав управления охраной (E12): только подтверждённые коды
+    // objects.arm/objects.disarm из фактического allowedActions ответа.
+    // Считаются один раз при входе; связь этих кодов с реальной серверной
+    // проверкой write-метода не доказана (E11), поэтому это НЕ единственный
+    // признак доступности — дополнительно проверяются canArm объекта и
+    // разрешимость IMEI/раздела.
+    const actions = Array.isArray(response.allowedActions) ? response.allowedActions : [];
+    const controlPermissions: SessionControlPermissions = {
+        arm: actions.includes('objects.arm'),
+        disarm: actions.includes('objects.disarm'),
+    };
+
+    const sessionValue = await createGeoritmSession(user, basic, SESSION_TTL, controlPermissions);
     return {user, sessionValue};
 };
 
@@ -527,6 +543,46 @@ export const findGeoritmObjectForUser = async (
     }
 };
 
+/**
+ * Контекст операции управления охраной (E12): владение объектом подтверждено
+ * ДО любого обращения к GEORITM с его идентификаторами (включая резолв IMEI),
+ * права управления взяты из проекции сессии. Чужой и несуществующий объект
+ * неотличимы (null). Используется georitm-control; сам Basic за пределами
+ * серверных модулей не покидает.
+ */
+export const resolveGeoritmControlContext = async (
+    userId: string,
+    objectId: string,
+): Promise<GeoritmControlContext | null> => {
+    const auth = await resolveGeoritmAuth();
+    if (!auth || auth.user.id !== userId) {
+        return null;
+    }
+
+    try {
+        const owned = await fetchOwnedObjects(auth.basic);
+        const target = owned.find((object) => String(object.id) === objectId);
+        if (!target) {
+            return null;
+        }
+        return {
+            basic: auth.basic,
+            sessionId: auth.sessionId,
+            userId: auth.user.id,
+            objectId,
+            target,
+            // Сессии, созданные до E12, проекции прав не имеют — «неизвестно»,
+            // управление скрыто (не «нет прав»: семантика другая).
+            permissions: auth.controlPermissions,
+        };
+    } catch (error) {
+        if (error instanceof GeoritmApiError && error.isUnauthorized) {
+            deleteSession(auth.sessionId);
+        }
+        throw error;
+    }
+};
+
 export const getGeoritmZonesForObject = async (objectId: string): Promise<ObjectZoneSection[]> => {
     const auth = await resolveGeoritmAuth();
     if (!auth) {
@@ -864,10 +920,24 @@ const GROUP_TYPE: Record<number, MonitorEventType> = {
  * Направление связи и охраны — только по кодам, проверенным на реальном
  * сервере (E2.0, тексты совпадают со справочником). Непроверенные коды
  * направление не получают — классифицируются по группе или как 'system'.
+ *
+ * Отказ-коды команды (E11, раздел 5; справочник группы 4 целиком получен
+ * на сервере 2.27.0): 450.1 «Ошибка снятия», 450.3 «Ошибка взятия»,
+ * 920.1 «Неисправность при взятии на охрану». Без явного правила они
+ * попали бы в подстрочную эвристику группы 4 («Ошибка снятия» содержит
+ * «снят») и были бы показаны в журнале как успешное снятие с охраны —
+ * конфликт с классификатором команды (E12), при котором отказ выглядел бы
+ * подтверждением. Явное правило переводит их в 'security_fault': это
+ * неисправности/отказы (isAlarm=true в справочнике), а не факты охраны.
+ * Семантику подтверждает справочник сервера; новые типы событий DTO
+ * не вводятся до ответа поставщика (E11, 9.2.6).
  */
 const VERIFIED_CODES: Record<string, MonitorEventType> = {
     '402.1': 'security_disarmed', // «Снятие раздела с охраны»
     '402.3': 'security_armed', // «Взятие раздела на охрану»
+    '450.1': 'security_fault', // «Ошибка снятия» (отказ команды, E11)
+    '450.3': 'security_fault', // «Ошибка взятия» (отказ команды, E11)
+    '920.1': 'security_fault', // «Неисправность при взятии на охрану» (E11)
     '761.1': 'connection_lost', // «GPRS SIM1 связь с объектом завершена»
     '761.3': 'connection_restored', // «GPRS SIM1 объект вышел на связь»
 };

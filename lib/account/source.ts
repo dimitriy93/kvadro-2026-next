@@ -1,8 +1,11 @@
 import type {
     CommunicationDiagnostics,
+    ControlAction,
+    ControlOperationResult,
     MonitorObject,
     MonitorObjectEvent,
     MonitorEventType,
+    ObjectControlState,
     ObjectFault,
     ObjectReportFile,
     ObjectReportFormat,
@@ -12,6 +15,9 @@ import type {
     PowerDiagnostics,
     PublicAccountUser,
 } from './contracts';
+import {ControlError} from './contracts';
+import {isGeoritmControlEnabled} from './control-gate';
+import {executeDemoControl, getDemoControlState} from './demo-control';
 import type {EventJournalCursor, EventJournalDirection} from './event-journal';
 import {
     findDemoObjectForUser,
@@ -39,8 +45,10 @@ import {
     getGeoritmReportForObject,
     getGeoritmZonesForObject,
     logoutGeoritm,
+    resolveGeoritmControlContext,
     verifyGeoritmCredentials,
 } from './georitm-source';
+import {executeGeoritmControlCommand, getGeoritmControlState} from './georitm-control';
 
 /**
  * Диспетчер источника данных кабинета.
@@ -141,6 +149,62 @@ export const getPowerForObject = async (objectId: string): Promise<PowerDiagnost
     getAccountDataSource() === 'georitm'
         ? getGeoritmPowerForObject(objectId)
         : getDemoPowerForObject(objectId);
+
+// ————————————— Управление охраной (E12) ————————
+
+/**
+ * Состояние управления охраной объекта (read-only опрос для UI).
+ *
+ * Feature gate GEORITM_CONTROL_ENABLED проверяется ДО источника: при
+ * выключенном gate возвращается безопасный ответ {enabled: false} без
+ * единого обращения к данным — ни read-, ни write-вызовов (E12: при
+ * выключенном gate управление полностью отсутствует, UI не показывает
+ * активные элементы). Чужой и несуществующий объект → null (404 маршрута).
+ */
+export const getObjectControlState = async (userId: string, objectId: string): Promise<ObjectControlState | null> => {
+    if (!isGeoritmControlEnabled()) {
+        return {enabled: false, availability: 'unknown', partitions: []};
+    }
+
+    if (getAccountDataSource() === 'georitm') {
+        const context = await resolveGeoritmControlContext(userId, objectId);
+        if (!context) {
+            return null;
+        }
+        return getGeoritmControlState(context);
+    }
+
+    return getDemoControlState(userId, objectId);
+};
+
+/**
+ * Команда управления охраной раздела (arm/disarm). Feature gate проверяется
+ * дважды: здесь и внутри georitm-control (первая строка перед любым вызовом
+ * GEORITM) — обход запретов браузером, demo-режимом или ошибкой конфигурации
+ * невозможен. Владение объектом проверяется в источнике заново (defense in
+ * depth). Валидация action/areaNum — на маршруте (HTTP 400), здесь только
+ * инварианты источника.
+ */
+export const executeObjectControl = async (
+    userId: string,
+    objectId: string,
+    action: ControlAction,
+    areaNum: number,
+): Promise<ControlOperationResult> => {
+    if (!isGeoritmControlEnabled()) {
+        throw new ControlError('gate-disabled', 'Управление охраной отключено');
+    }
+
+    if (getAccountDataSource() === 'georitm') {
+        const context = await resolveGeoritmControlContext(userId, objectId);
+        if (!context) {
+            throw new ControlError('not-owned', 'Объект не найден');
+        }
+        return executeGeoritmControlCommand(context, action, areaNum);
+    }
+
+    return executeDemoControl(userId, objectId, action, areaNum);
+};
 
 /**
  * Постраничная порция журнала событий объекта (E10). Первая страница

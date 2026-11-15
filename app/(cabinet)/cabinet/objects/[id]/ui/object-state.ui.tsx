@@ -1,6 +1,7 @@
-import type {CommunicationDiagnostics, MonitorObject, ObjectFault, ObjectZone, ObjectZoneSection, PowerDiagnostics} from '@/lib/account';
+import type {CommunicationDiagnostics, MonitorObject, ObjectControlState, ObjectFault, ObjectZone, ObjectZoneSection, PowerDiagnostics} from '@/lib/account';
 import {ObjectPageHeader} from './object-page-header.ui';
 import {ObjectCommunicationView} from './object-communication.ui';
+import {ObjectControlSection} from './object-control.ui';
 import {ObjectStateBadge} from '@/app/(cabinet)/cabinet/ui/object-state-badge.ui';
 import {ZONE_SYSTEM_NAMES} from '@/app/(cabinet)/cabinet/ui/state-meta';
 import {formatDateTime} from '@/app/(cabinet)/cabinet/ui/format';
@@ -19,6 +20,12 @@ interface IObjectStateViewProps {
     channels?: CommunicationDiagnostics | null;
     /** Диагностика питания (E9); null — загрузка завершилась ошибкой. */
     power?: PowerDiagnostics | null;
+    /**
+     * Состояние управления охраной (E12); null — загрузка завершилась
+     * ошибкой. При выключенном feature gate enabled=false — секция
+     * управления не рендерится вовсе.
+     */
+    control?: ObjectControlState | null;
     /** true — демонстрационный источник данных; false — реальные данные GEORITM. */
     isDemoData: boolean;
     /** id пользователя кабинета — namespace настроек разделов. */
@@ -77,7 +84,7 @@ const faultMeta = (fault: ObjectFault): string | null => {
  * не трактуется как «всё в норме».
  */
 export const ObjectStateView = (
-    {object, zones, zonesLoadFailed = false, faults = [], faultsLoadFailed = false, channels = null, power = null, isDemoData, userId}: IObjectStateViewProps,
+    {object, zones, zonesLoadFailed = false, faults = [], faultsLoadFailed = false, channels = null, power = null, control = null, isDemoData, userId}: IObjectStateViewProps,
 ) => {
     const totalZones = zones.reduce((sum, section) => sum + section.zones.length, 0);
     const faultsInconsistent = !faultsLoadFailed
@@ -118,6 +125,12 @@ export const ObjectStateView = (
                     </div>
                 </div>
             </section>
+
+            {/* Управление охраной (E12): при выключенном feature gate секция
+                не рендерится — UI не создаёт impression управления. */}
+            {control && (
+                <ObjectControlSection objectId={object.id} objectName={object.name} initial={control}/>
+            )}
 
             <section className="obj-section" aria-label="Техническое состояние">
                 <h2 className="obj-section__title">Техническое состояние</h2>

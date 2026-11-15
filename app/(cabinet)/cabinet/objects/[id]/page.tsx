@@ -1,7 +1,7 @@
 import {Metadata} from 'next';
 import {notFound, redirect} from 'next/navigation';
-import {findObjectForUser, getAccountDataSource, getChannelsForObject, getDiagnosticsForObject, getPowerForObject, getZonesForObject, getSessionUser} from '@/lib/account';
-import type {ObjectFault, ObjectZoneSection} from '@/lib/account';
+import {findObjectForUser, getAccountDataSource, getChannelsForObject, getDiagnosticsForObject, getObjectControlState, getPowerForObject, getZonesForObject, getSessionUser} from '@/lib/account';
+import type {ObjectControlState, ObjectFault, ObjectZoneSection} from '@/lib/account';
 import {cabinet} from '@/config/routes/cabinet.routes';
 import {ObjectStateView} from './ui/object-state.ui';
 
@@ -40,19 +40,23 @@ export default async function ObjectStatePage({params}: ObjectPageProps) {
 
     const {object, userId} = owned;
 
-    // Ошибки загрузки зон, диагностики, каналов связи и питания не должны
-    // ронять карточку объекта: соответствующие секции покажут сообщение,
-    // остальная страница остаётся рабочей. Загрузки независимы — выполняются
-    // параллельно (E9: каналы и питание не блокируют основные сведения).
-    const [zonesResult, diagnosticsResult, channelsResult, powerResult] = await Promise.allSettled([
+    // Ошибки загрузки зон, диагностики, каналов связи, питания и управления
+    // не должны ронять карточку объекта: соответствующие секции покажут
+    // сообщение, остальная страница остаётся рабочей. Загрузки независимы —
+    // выполняются параллельно (E9: каналы и питание не блокируют основные
+    // сведения; E12: управление не блокирует карточку).
+    const [zonesResult, diagnosticsResult, channelsResult, powerResult, controlResult] = await Promise.allSettled([
         getZonesForObject(object.id),
         getDiagnosticsForObject(object.id),
         getChannelsForObject(object.id),
         getPowerForObject(object.id),
+        getObjectControlState(userId, object.id),
     ]);
 
     const zones = zonesResult.status === 'fulfilled' ? zonesResult.value : [];
     const diagnostics = diagnosticsResult.status === 'fulfilled' ? diagnosticsResult.value : [];
+    const control: ObjectControlState | null =
+        controlResult.status === 'fulfilled' ? controlResult.value : null;
 
     return (
         <ObjectStateView
@@ -64,6 +68,7 @@ export default async function ObjectStatePage({params}: ObjectPageProps) {
             faultsLoadFailed={diagnosticsResult.status === 'rejected'}
             channels={channelsResult.status === 'fulfilled' ? channelsResult.value : null}
             power={powerResult.status === 'fulfilled' ? powerResult.value : null}
+            control={control}
             isDemoData={getAccountDataSource() === 'demo'}
         />
     );

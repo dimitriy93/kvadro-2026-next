@@ -11,7 +11,7 @@ import type {
     PowerDiagnostics,
     PublicAccountUser,
 } from './contracts';
-import {getDemoEventsForObject} from './demo-events';
+import {getDemoEventsForObject} from './demo-events.ts';
 
 /**
  * Демонстрационный источник данных личного кабинета.
