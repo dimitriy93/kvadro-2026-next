@@ -23,6 +23,7 @@ import {
     georitmDisarm,
     georitmHistoryOnObject,
     georitmObjectAreas,
+    georitmObjects,
     georitmPartitionsState,
     type GeoritmArea,
     type GeoritmCommandResponse,
@@ -44,12 +45,19 @@ import {
  *  2) защита от повторов и лимит частоты (ControlCommandGuard);
  *  3) владение объектом — до модуля (resolveGeoritmControlContext: объект
  *     из выдачи objects-tree-set/ пользователя);
- *  4) серверное разрешение раздела (objects/obj-areas/) и состояния
+ *  4) обогащение capability-контекста read-вызовом objects/obj/ (E13) по
+ *     уже подтверждённому id: tree-set не содержит ни canArm, ни imei
+ *     (документация и проба E12.3); запись другого id отбрасывается,
+ *     ошибка obj/ оставляет объект без обогащения (запрет, не разрешение);
+ *  5) серверное разрешение раздела (objects/obj-areas/) и состояния
  *     (objects/state/ по IMEI); IMEI резолвится только здесь и никогда
  *     не принимается от браузера и не возвращается в DTO;
- *  5) доступность управления: права пользователя (проекция allowedActions
- *     сессии) × canArm объекта (если поле присутствует; отсутствие —
- *     'unknown', консервативный запрет, E11 3.1) × известность состояния.
+ *  6) доступность управления: права пользователя (проекция allowedActions
+ *     сессии) × canArm объекта (Boolean по документации; только строгое
+ *     `true` — положительный признак, `false` — явный запрет, отсутствие —
+ *     'unknown', консервативный запрет, E11 3.1/E12.2 F1) × restricted
+ *     объекта (ограничение доступа «пользователь × объект», Integer 1/0:
+ *     1 — явный запрет, E12.2 F3) × известность состояния.
  *
  * Результат команды — честная трёхзначность (E11 4.2): {success: 1} означает
  * только приём команды сервером; 'confirmed' — исключительно по переходу
@@ -64,6 +72,8 @@ const partitionGuarded = (value: number | undefined): boolean | null =>
 
 /** Транспорт управления — точечные вызовы api-client (инъекция для smoke). */
 export interface GeoritmControlTransport {
+    /** objects/obj/ — обогащение capability-контекста (imei, canArm, restricted), E13. */
+    objects: (basic: string, objectId: number) => Promise<GeoritmObjectSummary[]>;
     areas: (basic: string, objectId: number) => Promise<GeoritmArea[]>;
     partitionsState: (basic: string, imei: string) => Promise<{state?: Record<string, number>}>;
     arm: (basic: string, imei: string, area: number) => Promise<GeoritmCommandResponse>;
@@ -72,6 +82,7 @@ export interface GeoritmControlTransport {
 }
 
 export const defaultGeoritmControlTransport: GeoritmControlTransport = {
+    objects: (basic, objectId) => georitmObjects(basic, [objectId]),
     areas: georitmObjectAreas,
     partitionsState: georitmPartitionsState,
     arm: georitmArm,
@@ -86,7 +97,9 @@ export interface GeoritmControlContext {
     userId: string;
     /** Идентификатор объекта кабинета (строка числового id GEORITM). */
     objectId: string;
-    /** Владеемый объект из выдачи objects-tree-set/ — источник IMEI и canArm. */
+    /** Владеемый объект из выдачи objects-tree-set/, обогащённый данными
+     *  objects/obj/ (imei, canArm, restricted — E13); обогащение выполняет
+     *  georitm-control перед вычислением доступности и командой. */
     target: GeoritmObjectSummary;
     /** Проекция прав сессии; undefined — права неизвестны (сессия до E12). */
     permissions: SessionControlPermissions | undefined;
@@ -98,10 +111,25 @@ export interface GeoritmControlContext {
  * повторно вызывает её перед отправкой, поэтому состояние DTO и решение
  * не расходятся).
  *
- * Правила — E11 3.1 (консервативные): отсутствие canArm ≠ «нельзя»,
- * а «неизвестно»; управление показывается только при одновременно
- * подтверждённых праве, canArm (если поле есть), разрешимом IMEI и
- * известном состоянии раздела.
+ * Правила — E11 3.1 (консервативные) с исправлениями E12.2:
+ *  - право пользователя: строго `false` — запрет, отсутствие проекции —
+ *    «неизвестно»;
+ *  - `canArm` — Boolean по документации GEORITM: только строгое `true` —
+ *    положительный признак (E12.2 F1); строгое `false` — явный запрет на
+ *    уровне объекта; `undefined`/`null` и любые значения других типов
+ *    (`1`, `0`, `"true"`) — «неизвестно», управление запрещено. Приведения
+ *    типов нет; `canArm === true` само по себе не разрешает управление —
+ *    остальные проверки продолжают действовать;
+ *  - `restricted` — ограничение доступа «пользователь × объект», Integer
+ *    по документации (1 — ограничен, 0 — не ограничен; поле условное —
+ *    «если установлен код ограниченной роли пользователя»): строгое `1` —
+ *    явный запрет (E12.2 F3); строгое `0` или отсутствие поля — ограничение
+ *    не установлено; любое другое присутствующее значение — «неизвестно».
+ *    Не приравнивается к `canArm` — это отдельное измерение capability;
+ *    точное взаимодействие с objects/arm/ — открытый вопрос поставщику (P7);
+ *  - управление показывается только при одновременно подтверждённых праве,
+ *    canArm (строго `true`), отсутствии ограничения restricted, разрешимом
+ *    IMEI и известном состоянии раздела; любое «неизвестно» запрещает.
  */
 export const computeControlAvailability = (
     action: ControlAction,
@@ -109,7 +137,10 @@ export const computeControlAvailability = (
         controlEnabled: boolean;
         permissions: SessionControlPermissions | undefined;
         objType: string | undefined;
-        canArm: number | undefined;
+        /** Boolean по документации; строгое сравнение, без приведения типов. */
+        canArm: boolean | null | undefined;
+        /** Integer 1/0 по документации; строгое сравнение, без приведения типов. */
+        restricted: number | null | undefined;
         imei: string | undefined;
         /** Известность текущего состояния охраны раздела. */
         guarded: boolean | null;
@@ -126,12 +157,24 @@ export const computeControlAvailability = (
     const hasPermission = inputs.permissions === undefined
         ? undefined
         : action === 'arm' ? inputs.permissions.arm : inputs.permissions.disarm;
-    if (hasPermission === false || inputs.canArm === 0) {
+    // Явные запреты: право пользователя, canArm: false (запрет на уровне
+    // объекта), restricted: 1 (ограничение доступа «пользователь × объект»).
+    if (hasPermission === false || inputs.canArm === false || inputs.restricted === 1) {
         return 'no-permission';
     }
-    // Права или canArm неизвестны (старая сессия / отсутствующее поле) —
-    // консервативное «неизвестно», кнопки скрыты до ответа поставщика.
-    if (hasPermission === undefined || inputs.canArm === undefined) {
+    // Права неизвестны (старая сессия) — консервативное «неизвестно».
+    if (hasPermission === undefined) {
+        return 'unknown';
+    }
+    // canArm: только строгое `true` — положительный признак. Отсутствующее
+    // поле и любой некорректный тип (`null`, `1`, `0`, `"true"`) — запрет.
+    if (inputs.canArm !== true) {
+        return 'unknown';
+    }
+    // restricted: поле условное — отсутствие означает, что кода ограниченной
+    // роли нет; строгое `0` — ограничение не установлено. Прочие значения —
+    // контракт нарушен, «неизвестно».
+    if (inputs.restricted !== undefined && inputs.restricted !== 0) {
         return 'unknown';
     }
     if (typeof inputs.imei !== 'string' || inputs.imei.trim().length === 0) {
@@ -148,6 +191,66 @@ export const computeControlAvailability = (
 const resolveImei = (target: GeoritmObjectSummary): string | undefined => {
     const imei = target.imei;
     return typeof imei === 'string' && imei.trim().length > 0 ? imei.trim() : undefined;
+};
+
+/**
+ * Обогащение capability-контекста из objects/obj/ (E13).
+ *
+ * objects-tree-set/ — источник ctx.target — не содержит ни canArm, ни imei
+ * (по документации canArm — только в objects/obj/ и obj-details/; проба
+ * E12.3 подтвердила: tree-set возвращает 6 полей, imei/canArm/restricted
+ * отсутствуют). Без обогащения реальный объект всегда получал 'unknown' —
+ * блокер доступности, не безопасности (запрет консервативен).
+ *
+ * Безопасность:
+ *  - запрос выполняется ТОЛЬКО по id объекта, владение которому уже
+ *    подтверждено (ctx.target из выдачи tree-set текущего пользователя);
+ *    данные браузера не используются;
+ *  - из ответа используется запись со СТРОГО совпадающим id (числовое
+ *    равенство); запись другого объекта отбрасывается целиком — данные
+ *    чужого объекта не применяются ни при каком расхождении;
+ *  - переносятся только capability-поля (imei, canArm, restricted) и
+ *    только если поле присутствует в ответе; отсутствие поля в obj/ не
+ *    стирает значение цели (в реальной цепочке tree-set этих полей не
+ *    содержит, поэтому fallback не даёт разрешения);
+ *  - ошибка obj/ (кроме 401) не выбрасывается: цель остаётся без
+ *    обогащения → canArm/imei дают 'unknown' → управление запрещено;
+ *    данные не выдумываются;
+ *  - 401 пробрасывается — сессию отзывает общий обработчик вызывающей
+ *    функции.
+ */
+const enrichControlTarget = async (
+    ctx: GeoritmControlContext,
+    transport: GeoritmControlTransport,
+): Promise<GeoritmControlContext> => {
+    let record: GeoritmObjectSummary | undefined;
+    try {
+        const objects = await transport.objects(ctx.basic, ctx.target.id);
+        record = Array.isArray(objects)
+            ? objects.find((candidate) => candidate && candidate.id === ctx.target.id)
+            : undefined;
+    } catch (error) {
+        if (error instanceof GeoritmApiError && error.isUnauthorized) {
+            throw error;
+        }
+        // objects/obj/ недоступен — управление запрещено консервативно:
+        // объект остаётся без обогащения, canArm/imei дают 'unknown'.
+        return ctx;
+    }
+    if (!record) {
+        // Записи целевого объекта в ответе нет (или ответ другого объекта) —
+        // без обогащения, управление остаётся запрещённым.
+        return ctx;
+    }
+    return {
+        ...ctx,
+        target: {
+            ...ctx.target,
+            imei: record.imei !== undefined ? record.imei : ctx.target.imei,
+            canArm: 'canArm' in record ? record.canArm : ctx.target.canArm,
+            restricted: 'restricted' in record ? record.restricted : ctx.target.restricted,
+        },
+    };
 };
 
 /** Имя раздела для DTO: без имени — «Раздел N» (как в списке разделов кабинета). */
@@ -215,6 +318,7 @@ const toPartitions = (
             permissions: ctx.permissions,
             objType: ctx.target.objType,
             canArm: ctx.target.canArm,
+            restricted: ctx.target.restricted,
             imei: snapshot.imei,
             guarded,
         };
@@ -229,14 +333,31 @@ const toPartitions = (
     return partitions;
 };
 
+/**
+ * DTO состояния управления с учётом feature gate (E16).
+ *
+ * Capability-факты в DTO вычислены на реальных данных источника независимо
+ * от gate: видимость управления определяется возможностями конкретной
+ * учётной записи, а не глобальным флагом. Gate помечает только канал команд
+ * (enabled: false): UI показывает разделы в режиме Safe Preview
+ * (демо-подтверждение без команд) либо скрывает секцию целиком, если
+ * подтверждённых разделов нет. Чистая функция — выделена для smoke-тестов
+ * без next/headers.
+ */
+export const applyControlGateToState = (state: ObjectControlState, controlEnabled: boolean): ObjectControlState =>
+    controlEnabled ? state : {...state, enabled: false};
+
 /** Приватное состояние управления объектом (read-only опрос для UI и маршрутов). */
 export const getGeoritmControlState = async (ctx: GeoritmControlContext): Promise<ObjectControlState> => {
     try {
-        const snapshot = await fetchControlSnapshot(ctx, defaultGeoritmControlTransport);
+        // Обогащение из objects/obj/ — read-вызов по уже подтверждённому id;
+        // вызывается только при включённом gate (проверка в источнике).
+        const enriched = await enrichControlTarget(ctx, defaultGeoritmControlTransport);
+        const snapshot = await fetchControlSnapshot(enriched, defaultGeoritmControlTransport);
         return {
             enabled: true,
             availability: snapshot.stateKnown ? 'available' : 'unknown',
-            partitions: toPartitions(ctx, snapshot),
+            partitions: toPartitions(enriched, snapshot),
         };
     } catch (error) {
         if (error instanceof GeoritmApiError && error.isUnauthorized) {
@@ -339,7 +460,10 @@ export const executeGeoritmControlCommand = async (
 
     let outcome: {result: ControlResult; message: string} | null = null;
     try {
-        // Шаг 3 — серверное разрешение раздела и состояния (IMEI только здесь).
+        // Шаг 3 — обогащение capability-контекста read-вызовом objects/obj/
+        // (E13) по уже подтверждённому id, затем серверное разрешение
+        // раздела и состояния (IMEI только здесь).
+        ctx = await enrichControlTarget(ctx, transport);
         const snapshot = await fetchControlSnapshot(ctx, transport);
         const area = snapshot.areas.find(
             (candidate) => candidate && typeof candidate.num === 'number' && candidate.num === areaNum,
@@ -355,6 +479,7 @@ export const executeGeoritmControlCommand = async (
             permissions: ctx.permissions,
             objType: ctx.target.objType,
             canArm: ctx.target.canArm,
+            restricted: ctx.target.restricted,
             imei: snapshot.imei,
             guarded,
         });

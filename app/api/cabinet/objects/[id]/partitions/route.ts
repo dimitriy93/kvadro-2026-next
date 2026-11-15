@@ -15,9 +15,10 @@ const NO_STORE = {'Cache-Control': 'no-store'} as const;
  * и RSC-снимок источником истины не являются (E11, раздел 8).
  *
  * Feature gate GEORITM_CONTROL_ENABLED проверяется внутри диспетчера:
- * при выключенном gate (текущее состояние E12) возвращается
- * {enabled: false} без обращений к GEORITM, и UI не показывает
- * элементы управления.
+ * он управляет только каналом команд. Для GEORITM capability-оценка
+ * вычисляется на реальных read-данных и при выключенном gate (E16):
+ * DTO помечается enabled: false — видимость управления определяется
+ * возможностями учётной записи, а write-команды остаются заблокированы.
  */
 export const GET = async (
     _request: NextRequest,

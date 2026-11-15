@@ -203,7 +203,24 @@ export interface GeoritmObjectSummary {
     objectState?: GeoritmObjectState;
     lastGSMConnectionTime?: number | string;
     lastGPSConnectionTime?: number | string;
-    canArm?: 0 | 1;
+    /**
+     * Возможность управления постановки и снятия разделов стационарного
+     * объекта — Boolean по документации GEORITM («если есть данные»).
+     * E12.2 (F1): было `0 | 1` — несоответствие документации приводило к
+     * тому, что `canArm: false` не распознавался как запрет. Значение
+     * используется строго (=== true / === false), без приведения типов;
+     * отсутствие поля — не разрешение (см. computeControlAvailability).
+     */
+    canArm?: boolean;
+    /**
+     * Ограничение доступа «пользователь × объект» — Integer по документации
+     * GEORITM: 1 — ограничен, 0 — не ограничен (условное наличие: «если
+     * установлен код ограниченной роли пользователя»). Поле присутствует
+     * в выдаче objects-tree-set/ и objects/obj/ (анализ REST-API, стр. 198,
+     * 206). Обработка — в computeControlAvailability (E12.2, F3); точное
+     * взаимодействие с objects/arm/ — открытый вопрос поставщику (P7).
+     */
+    restricted?: number;
     /** Приборы объекта (объект/obj/, наблюдение 2.27.0; в документации не описан). */
     devices?: GeoritmDevice[];
     [key: string]: unknown;

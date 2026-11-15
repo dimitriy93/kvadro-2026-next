@@ -549,6 +549,10 @@ export const findGeoritmObjectForUser = async (
  * права управления взяты из проекции сессии. Чужой и несуществующий объект
  * неотличимы (null). Используется georitm-control; сам Basic за пределами
  * серверных модулей не покидает.
+ *
+ * target — «сырая» запись objects-tree-set/ (imei/canArm/restricted в ней
+ * фактически отсутствуют, проба E12.3); обогащение capability-полей из
+ * objects/obj/ выполняет georitm-control (E13) уже после проверки владения.
  */
 export const resolveGeoritmControlContext = async (
     userId: string,

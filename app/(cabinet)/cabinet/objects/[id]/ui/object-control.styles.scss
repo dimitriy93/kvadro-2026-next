@@ -33,6 +33,12 @@
     color: #3b82f6;
   }
 
+  &--demo {
+    border-color: rgba(#3b82f6, 0.4);
+    color: #3b82f6;
+    background: rgba(#3b82f6, 0.06);
+  }
+
   &--running {
     color: rgba(var(--ink-rgb), 0.65);
     border-style: dashed;
@@ -91,6 +97,10 @@
 
   &--disarmed {
     color: rgba(var(--ink-rgb), 0.55);
+  }
+
+  &--unknown {
+    color: #f59e0b;
   }
 }
 
@@ -176,6 +186,34 @@
   color: #f59e0b;
 }
 
+/* Демонстрационный режим диалога (E13.1 Safe Preview): явная граница режимов. */
+.obj-control-modal__demo {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(#3b82f6, 0.4);
+  border-radius: 10px;
+  background: rgba(#3b82f6, 0.06);
+  @include font-size(12, 15);
+  color: #3b82f6;
+}
+
+/* Предупреждение рабочего режима: подтверждение отправляет реальную команду. */
+.obj-control-modal__mode {
+  margin: 10px 0 0;
+  @include font-size(12, 15);
+  color: rgba(var(--ink-rgb), 0.6);
+}
+
+/* Статус выполняющейся операции внутри диалога (E13.1). */
+.obj-control-modal__status {
+  margin: 10px 0 0;
+  @include font-size(12, 15);
+  color: rgba(var(--ink-rgb), 0.65);
+  border: 1px dashed rgba(var(--ink-rgb), 0.25);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
 .obj-control-modal__actions {
   margin-top: 16px;
   display: flex;
@@ -227,6 +265,14 @@
   }
 }
 
+/* Видимый focus indicator для клавиатурной навигации (E13.1, доступность). */
+.obj-control-btn:focus-visible,
+.obj-control-modal__confirm:focus-visible,
+.obj-control-modal__cancel:focus-visible {
+  outline: 2px solid rgba(var(--ink-rgb), 0.85);
+  outline-offset: 2px;
+}
+
 /* Адаптивность: на узких экранах кнопка переносится под описание раздела. */
 @media (max-width: 520px) {
   .obj-control-row {
@@ -236,5 +282,18 @@
 
   .obj-control-row__actions {
     justify-content: flex-end;
+  }
+
+  /* Кнопки диалога: достаточная область нажатия и без обрезания на 375px. */
+  .obj-control-modal__actions {
+    flex-wrap: wrap;
+  }
+
+  .obj-control-modal__confirm,
+  .obj-control-modal__cancel {
+    flex: 1 1 auto;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: center;
   }
 }

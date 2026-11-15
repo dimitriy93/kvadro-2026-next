@@ -48,27 +48,25 @@ import {
     resolveGeoritmControlContext,
     verifyGeoritmCredentials,
 } from './georitm-source';
-import {executeGeoritmControlCommand, getGeoritmControlState} from './georitm-control';
+import {executeGeoritmControlCommand, applyControlGateToState, getGeoritmControlState} from './georitm-control';
+import {getAccountDataSource, type AccountDataSourceKind} from './source-config';
+
+// Определение источника — единожды в source-config (E15): здесь и в
+// маршрутах используется импорт, локальных копий с расхождением нет.
+export {getAccountDataSource, type AccountDataSourceKind};
 
 /**
  * Диспетчер источника данных кабинета.
  *
- * Источник задаётся переменной окружения ACCOUNT_DATA_SOURCE:
- *   - 'demo' (по умолчанию) — демонстрационные данные, поведение прежнее;
- *   - 'georitm' — реальные данные GEORITM REST API.
+ * Источник задаётся переменной окружения ACCOUNT_DATA_SOURCE (см.
+ * source-config.ts): в production — всегда 'georitm' (реальные данные
+ * GEORITM REST API, demo не активируется ни при каком значении переменной);
+ * вне production — 'demo' по умолчанию и 'georitm' при явном значении.
  *
  * Страницы и API кабинета вызывают только функции этого модуля; условная
  * логика по источнику в UI запрещена. Все функции асинхронные: демо-источник
  * синхронный по сути, но обёрнут в Promise ради единого контракта.
  */
-
-export type AccountDataSourceKind = 'demo' | 'georitm';
-
-/** Текущий источник данных. Отсутствие настройки — безопасное значение 'demo'. */
-export const getAccountDataSource = (): AccountDataSourceKind => {
-    const value = process.env.ACCOUNT_DATA_SOURCE?.trim().toLowerCase();
-    return value === 'georitm' ? 'georitm' : 'demo';
-};
 
 /** Результат проверки учётных данных источника. */
 export interface VerifiedCredentials {
@@ -155,23 +153,28 @@ export const getPowerForObject = async (objectId: string): Promise<PowerDiagnost
 /**
  * Состояние управления охраной объекта (read-only опрос для UI).
  *
- * Feature gate GEORITM_CONTROL_ENABLED проверяется ДО источника: при
- * выключенном gate возвращается безопасный ответ {enabled: false} без
- * единого обращения к данным — ни read-, ни write-вызовов (E12: при
- * выключенном gate управление полностью отсутствует, UI не показывает
- * активные элементы). Чужой и несуществующий объект → null (404 маршрута).
+ * GEORITM (E16): capability-состояние вычисляется на реальных read-данных
+ * (objects/obj/, obj-areas/, state/) и при выключенном feature gate —
+ * видимость управления определяется фактическими возможностями конкретной
+ * учётной записи, а не глобальным флагом. Gate помечает в DTO только канал
+ * команд (enabled: false — Safe Preview, подтверждение заблокировано);
+ * write-команды по-прежнему невозможны без gate: gate проверяется
+ * маршрутом, в executeObjectControl и в georitm-control. Владение объектом
+ * проверяется источником; чужой и несуществующий объект → null (404
+ * маршрута). Демо-источник при выключенном gate возвращает безопасный
+ * ответ без данных — Safe Preview демо строится из DTO зон (E13.1).
  */
 export const getObjectControlState = async (userId: string, objectId: string): Promise<ObjectControlState | null> => {
-    if (!isGeoritmControlEnabled()) {
-        return {enabled: false, availability: 'unknown', partitions: []};
-    }
-
     if (getAccountDataSource() === 'georitm') {
         const context = await resolveGeoritmControlContext(userId, objectId);
         if (!context) {
             return null;
         }
-        return getGeoritmControlState(context);
+        return applyControlGateToState(await getGeoritmControlState(context), isGeoritmControlEnabled());
+    }
+
+    if (!isGeoritmControlEnabled()) {
+        return {enabled: false, availability: 'unknown', partitions: []};
     }
 
     return getDemoControlState(userId, objectId);

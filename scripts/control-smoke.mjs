@@ -17,8 +17,14 @@
  *   4) guard повторов: in-flight, cooldown после unknown, rate limit;
  *   5) executeGeoritmControlCommand: gate off → ни одного вызова
  *      транспорта (в том числе read); счастливый путь; отказы прав/canArm/
- *      IMEI/состояния; уже в целевом состоянии; чужой раздел; 401;
- *   6) demo-аналог: тот же gate, ownership, трёхзначность, оверлей.
+ *      restricted/IMEI/состояния; уже в целевом состоянии; чужой раздел;
+ *      401; isFromIDP без canArm не разрешает управление;
+ *   6) demo-аналог: тот же gate, ownership, трёхзначность, оверлей;
+ *   7) обогащение capability-контекста objects/obj/ (E13): mock-контекст
+ *      имитирует фактический tree-set БЕЗ imei/canArm (проба E12.3 — 6
+ *      полей), оба значения приходят из objects/obj/; строгая сверка id
+ *      (запись другого объекта отбрасывается); ошибка/отсутствие obj/
+ *      дают запрет; при выключенном gate objects/obj/ не вызывается.
  *
  * Реальные write-вызовы не выполняются: транспорт подменяется целиком.
  */
@@ -34,7 +40,7 @@ import {
 import {parseControlGate} from '../lib/account/control-gate.ts';
 import {ControlError} from '../lib/account/contracts.ts';
 import {deleteSession} from '../lib/account/session-store.ts';
-import {executeGeoritmControlCommand, computeControlAvailability} from '../lib/account/georitm-control.ts';
+import {executeGeoritmControlCommand, getGeoritmControlState, computeControlAvailability, applyControlGateToState} from '../lib/account/georitm-control.ts';
 import {
     georitmArm,
     georitmDisarm,
@@ -373,25 +379,43 @@ test('E12.13 Guard: in-flight, cooldown после unknown, rate limit', () => {
 
 const CONTROL_GATE = 'GEORITM_CONTROL_ENABLED';
 
-/** Контекст владеемого стационарного объекта с правами и canArm=1. */
+/**
+ * Контекст владеемого стационарного объекта с правами (E13). target —
+ * «сырая» запись objects-tree-set/ в фактическом составе полей сервера
+ * 2.27.0 (проба E12.3: 6 полей, imei/canArm/restricted ОТСУТСТВУЮТ) —
+ * mock больше не маскирует отсутствие данных в реальной цепочке; imei и
+ * canArm поставляются транспортом objects (objects/obj/).
+ */
 const makeContext = (overrides = {}) => ({
     basic: 'TESTBASIC',
     sessionId: 's1',
     userId: 'u1',
     objectId: '59',
-    target: {id: 59, imei: '863591025852785', objType: '1', canArm: 1},
+    target: {id: 59, extId: 90059, name: 'Магазин «Белочка»', objType: '1'},
     permissions: {arm: true, disarm: true},
     ...overrides,
 });
 
+/** Запись objects/obj/ по умолчанию (документированный носитель canArm, imei). */
+const DEFAULT_OBJ_RECORD = {id: 59, imei: '863591025852785', canArm: true, objType: '1', isFromIDP: true};
+
 /**
  * Транспорт с управляемой картой state/ (последовательность ответов) и
  * журналом. Фиксирует все вызовы для проверок «write не вызывался».
+ * objectRecord — ответ objects/obj/: массив записей (по умолчанию запись
+ * целевого объекта), [] — объект не найден, 'error' — ошибка метода.
  */
-const makeTransport = ({states = [{'1': 1}], history = []} = {}) => {
-    const calls = {arm: [], disarm: [], state: [], areas: [], history: []};
+const makeTransport = ({states = [{'1': 1}], history = [], objectRecord = [DEFAULT_OBJ_RECORD]} = {}) => {
+    const calls = {arm: [], disarm: [], state: [], areas: [], history: [], objects: []};
     let stateIndex = 0;
     const transport = {
+        objects: async (basic, objectId) => {
+            calls.objects.push({basic, objectId});
+            if (objectRecord === 'error') {
+                throw new GeoritmApiError('http', 500, null, 'HTTP 500');
+            }
+            return objectRecord;
+        },
         areas: async () => {
             calls.areas.push(1);
             return [{num: 1, name: 'Торговый зал'}, {num: 2, name: 'Склад'}];
@@ -430,8 +454,9 @@ test('E12.14 Команда: выключенный gate — ни одного �
             'gate-disabled',
             'gate выключен',
         );
-        assertEqual(calls.areas.length + calls.state.length + writeCalls(calls) + calls.history.length, 0,
-            'ни read-, ни write-вызовов при выключенном gate');
+        assertEqual(calls.areas.length + calls.state.length + writeCalls(calls) + calls.history.length
+                + calls.objects.length, 0,
+            'ни read- (включая objects/obj/), ни write-вызовов при выключенном gate');
         assert(error.message.length > 0, 'есть человекочитаемое сообщение');
     } finally {
         if (saved === undefined) {
@@ -583,7 +608,7 @@ test('E12.20 Команда: 401 GEORITM — исключение пробрас
     }
 });
 
-test('E12.21 Команда: отказы без write — чужой раздел, нет прав, canArm, IMEI, состояние', async () => {
+test('E12.21 Команда: отказы без write — чужой раздел, нет прав, canArm/restricted, IMEI, состояние, isFromIDP', async () => {
     process.env[CONTROL_GATE] = 'true';
     const clock = makeFakeClock();
     const guard = new ControlCommandGuard(500, 100);
@@ -608,8 +633,10 @@ test('E12.21 Команда: отказы без write — чужой разде
         assertEqual(writeCalls(calls), 0, 'write не выполнялся');
     }
     // canArm отсутствует у объекта → unknown (консервативный запрет, E11).
+    // objectRecord: [] — resolver-уровень: capability-данные заданы в target
+    // вручную, обогащение obj/ отключено (реальная цепочка — в E13-сценариях).
     {
-        const {calls, transport} = makeTransport({states: [{'1': 1}]});
+        const {calls, transport} = makeTransport({states: [{'1': 1}], objectRecord: []});
         await assertThrowsControl(
             () => executeGeoritmControlCommand(makeContext({target: {id: 59, imei: '863591025852785', objType: '1'}}), 'arm', 1,
                 {transport, guard, ...clock, windowMs: 200, intervalMs: 50}),
@@ -617,29 +644,63 @@ test('E12.21 Команда: отказы без write — чужой разде
         );
         assertEqual(writeCalls(calls), 0, 'write не выполнялся');
     }
-    // canArm=0 → no-permission.
+    // canArm=false → no-permission (явный запрет объекта; E12.2 F1 — до
+    // исправления Boolean false распознавался как «доступно»).
     {
-        const {calls, transport} = makeTransport({states: [{'1': 1}]});
+        const {calls, transport} = makeTransport({states: [{'1': 1}], objectRecord: []});
         await assertThrowsControl(
-            () => executeGeoritmControlCommand(makeContext({target: {id: 59, imei: '863591025852785', objType: '1', canArm: 0}}), 'disarm', 1,
+            () => executeGeoritmControlCommand(makeContext({target: {id: 59, imei: '863591025852785', objType: '1', canArm: false}}), 'disarm', 1,
                 {transport, guard, ...clock, windowMs: 200, intervalMs: 50}),
-            'no-permission', 'canArm=0',
+            'no-permission', 'canArm=false',
         );
+        assertEqual(writeCalls(calls), 0, 'write не выполнялся');
+    }
+    // canArm=1 (число) — некорректный тип → unknown (приведения типов нет).
+    {
+        const {calls, transport} = makeTransport({states: [{'1': 1}], objectRecord: []});
+        await assertThrowsControl(
+            () => executeGeoritmControlCommand(makeContext({target: {id: 59, imei: '863591025852785', objType: '1', canArm: 1}}), 'arm', 1,
+                {transport, guard, ...clock, windowMs: 200, intervalMs: 50}),
+            'unknown-capability', 'canArm=1 — некорректный тип',
+        );
+        assertEqual(writeCalls(calls), 0, 'write не выполнялся');
+    }
+    // restricted=1 — явный запрет «пользователь × объект» (E12.2 F3),
+    // в том числе при положительном canArm=true.
+    {
+        const {calls, transport} = makeTransport({states: [{'1': 1}], objectRecord: []});
+        await assertThrowsControl(
+            () => executeGeoritmControlCommand(makeContext({target: {id: 59, imei: '863591025852785', objType: '1', canArm: true, restricted: 1}}), 'arm', 1,
+                {transport, guard, ...clock, windowMs: 200, intervalMs: 50}),
+            'no-permission', 'restricted=1 при canArm=true',
+        );
+        assertEqual(writeCalls(calls), 0, 'write не выполнялся');
+    }
+    // isFromIDP=true при отсутствующем canArm — не разрешает управление
+    // (специального допуска для IDP-объектов нет, E12.2).
+    {
+        const {calls, transport} = makeTransport({states: [{'1': 1}], objectRecord: []});
+        await assertThrowsControl(
+            () => executeGeoritmControlCommand(makeContext({target: {id: 59, imei: '863591025852785', objType: '1', isFromIDP: true}}), 'arm', 1,
+                {transport, guard, ...clock, windowMs: 200, intervalMs: 50}),
+            'unknown-capability', 'isFromIDP=true без canArm',
+        );
+        assertEqual(writeCalls(calls), 0, 'write не выполнялся');
     }
     // Мобильный объект → unsupported.
     {
         const {calls, transport} = makeTransport({states: [{'1': 1}]});
         await assertThrowsControl(
-            () => executeGeoritmControlCommand(makeContext({target: {id: 59, imei: '863591025852785', objType: '0', canArm: 1}}), 'arm', 1,
+            () => executeGeoritmControlCommand(makeContext({target: {id: 59, imei: '863591025852785', objType: '0', canArm: true}}), 'arm', 1,
                 {transport, guard, ...clock, windowMs: 200, intervalMs: 50}),
             'unsupported', 'мобильный объект',
         );
     }
-    // IMEI не разрешён → unknown.
+    // IMEI не разрешён → unknown (resolver-уровень, обогащение отключено).
     {
-        const {calls, transport} = makeTransport({states: [{'1': 1}]});
+        const {calls, transport} = makeTransport({states: [{'1': 1}], objectRecord: []});
         await assertThrowsControl(
-            () => executeGeoritmControlCommand(makeContext({target: {id: 59, objType: '1', canArm: 1}}), 'arm', 1,
+            () => executeGeoritmControlCommand(makeContext({target: {id: 59, objType: '1', canArm: true}}), 'arm', 1,
                 {transport, guard, ...clock, windowMs: 200, intervalMs: 50}),
             'unknown-capability', 'IMEI отсутствует',
         );
@@ -678,25 +739,257 @@ test('E12.21 Команда: отказы без write — чужой разде
     delete process.env[CONTROL_GATE];
 });
 
-test('E12.22 Capability: матрица вычисления доступности', () => {
+test('E12.22 Capability: матрица canArm × restricted (F1/F3), обе операции', () => {
     const base = {
         controlEnabled: true,
         permissions: {arm: true, disarm: true},
         objType: '1',
-        canArm: 1,
+        canArm: true,
+        restricted: 0,
         imei: '863591025852785',
         guarded: false,
     };
-    assertEqual(computeControlAvailability('arm', base), 'available', 'полное подтверждение');
+    // Полное подтверждение — доступно для обеих операций.
+    assertEqual(computeControlAvailability('arm', base), 'available', 'полное подтверждение (arm)');
+    assertEqual(computeControlAvailability('disarm', base), 'available', 'полное подтверждение (disarm)');
+
+    // — canArm (F1): Boolean по документации, строгие значения без приведения типов —
+    assertEqual(computeControlAvailability('arm', {...base, canArm: true}), 'available', 'canArm=true — положительный признак');
+    assertEqual(computeControlAvailability('disarm', {...base, canArm: true}), 'available', 'canArm=true (disarm)');
+    assertEqual(computeControlAvailability('arm', {...base, canArm: false}), 'no-permission', 'canArm=false — явный запрет');
+    assertEqual(computeControlAvailability('disarm', {...base, canArm: false}), 'no-permission', 'canArm=false — явный запрет (disarm)');
+    assertEqual(computeControlAvailability('arm', {...base, canArm: undefined}), 'unknown', 'canArm отсутствует — запрет');
+    assertEqual(computeControlAvailability('arm', {...base, canArm: null}), 'unknown', 'canArm=null — запрет');
+    assertEqual(computeControlAvailability('arm', {...base, canArm: 'true'}), 'unknown', 'canArm="true" — некорректный тип, запрет');
+    assertEqual(computeControlAvailability('arm', {...base, canArm: 1}), 'unknown', 'canArm=1 — некорректный тип, запрет');
+    assertEqual(computeControlAvailability('arm', {...base, canArm: 0}), 'unknown', 'canArm=0 — некорректный тип, запрет');
+
+    // — restricted (F3): Integer 1/0 по документации, поле условное —
+    assertEqual(computeControlAvailability('arm', {...base, restricted: 0}), 'available', 'restricted=0 — ограничение не установлено');
+    assertEqual(computeControlAvailability('arm', {...base, restricted: undefined}), 'available', 'restricted отсутствует (условное поле)');
+    assertEqual(computeControlAvailability('arm', {...base, restricted: 1}), 'no-permission', 'restricted=1 — явный запрет');
+    assertEqual(computeControlAvailability('disarm', {...base, restricted: 1}), 'no-permission', 'restricted=1 — явный запрет (disarm)');
+    assertEqual(computeControlAvailability('arm', {...base, restricted: null}), 'unknown', 'restricted=null — некорректное значение');
+    assertEqual(computeControlAvailability('arm', {...base, restricted: true}), 'unknown', 'restricted=true — некорректный тип');
+    assertEqual(computeControlAvailability('arm', {...base, restricted: '1'}), 'unknown', 'restricted="1" — некорректный тип');
+    assertEqual(computeControlAvailability('arm', {...base, restricted: 2}), 'unknown', 'restricted=2 — вне документированного словаря');
+
+    // — комбинации (требование задачи E12.2) —
+    assertEqual(computeControlAvailability('arm', {...base, canArm: true, restricted: 1}), 'no-permission',
+        'canArm=true + restricted=1 — положительный canArm не перекрывает запрет');
+    assertEqual(computeControlAvailability('arm', {...base, canArm: false, restricted: 0}), 'no-permission',
+        'canArm=false + restricted=0 — запрет объекта действует');
+    // canArm отсутствует, но allowedActions содержит arm/disarm (права есть) — запрет.
+    assertEqual(computeControlAvailability('arm', {...base, canArm: undefined, restricted: undefined}), 'unknown',
+        'canArm отсутствует + права arm/disarm есть — запрет');
+    assertEqual(computeControlAvailability('arm', {...base, canArm: undefined, guarded: null}), 'unknown',
+        'canArm отсутствует + неизвестное состояние — запрет');
+    assertEqual(computeControlAvailability('arm', {...base, guarded: null}), 'unknown',
+        'canArm=true + неизвестное состояние раздела — запрет');
+    assertEqual(computeControlAvailability('disarm', {...base, guarded: null}), 'unknown',
+        'canArm=true + неизвестное состояние раздела — запрет (disarm)');
+    assertEqual(computeControlAvailability('arm', {...base, imei: undefined}), 'unknown',
+        'canArm=true + IMEI не разрешён — запрет');
+    assertEqual(computeControlAvailability('disarm', {...base, imei: ''}), 'unknown',
+        'canArm=true + пустой IMEI — запрет (disarm)');
+
+    // — прочие независимые проверки сохраняются —
     assertEqual(computeControlAvailability('arm', {...base, controlEnabled: false}), 'disabled', 'gate off');
     assertEqual(computeControlAvailability('arm', {...base, objType: '0'}), 'unsupported', 'мобильный');
     assertEqual(computeControlAvailability('arm', {...base, permissions: {arm: false, disarm: true}}), 'no-permission', 'нет права');
-    assertEqual(computeControlAvailability('arm', {...base, canArm: 0}), 'no-permission', 'canArm=0');
-    assertEqual(computeControlAvailability('arm', {...base, canArm: undefined}), 'unknown', 'canArm отсутствует');
     assertEqual(computeControlAvailability('arm', {...base, permissions: undefined}), 'unknown', 'права неизвестны');
-    assertEqual(computeControlAvailability('arm', {...base, imei: undefined}), 'unknown', 'нет IMEI');
-    assertEqual(computeControlAvailability('arm', {...base, guarded: null}), 'unknown', 'состояние неизвестно');
     assertEqual(computeControlAvailability('disarm', {...base, guarded: true}), 'available', 'disarm на взятии');
+});
+
+// ————————— E13: обогащение capability-контекста из objects/obj/ ————————
+
+test('E13.1 Обогащение: canArm и IMEI приходят из objects/obj/ — реальная цепочка без маскировки', async () => {
+    process.env[CONTROL_GATE] = 'true';
+    const clock = makeFakeClock();
+    const {calls, transport} = makeTransport({states: [{'1': 1}, {'1': 1}, {'1': 2}, {'1': 2}]});
+    const guard = new ControlCommandGuard(500, 100);
+    try {
+        // makeContext() — target без imei/canArm (фактический tree-set E12.3).
+        const result = await executeGeoritmControlCommand(makeContext(), 'arm', 1, {
+            transport, guard, ...clock, windowMs: 2000, intervalMs: 50,
+        });
+        assertEqual(result.result, 'confirmed', 'команда исполнена');
+        assertEqual(calls.objects, [{basic: 'TESTBASIC', objectId: 59}], 'objects/obj/ вызван по id владеемого объекта');
+        assertEqual(calls.arm, [{basic: 'TESTBASIC', imei: '863591025852785', area: 1}], 'IMEI взят из objects/obj/ (в tree-set его нет)');
+        const partition1 = result.partitions.find((partition) => partition.num === 1);
+        assertEqual(partition1?.arm, 'available', 'DTO после команды доступен');
+        assert(!JSON.stringify(result.partitions).includes('863591025852785'), 'IMEI отсутствует в DTO');
+    } finally {
+        delete process.env[CONTROL_GATE];
+    }
+});
+
+test('E13.2 Обогащение: canArm=false из objects/obj/ → no-permission без write', async () => {
+    process.env[CONTROL_GATE] = 'true';
+    const clock = makeFakeClock();
+    const {calls, transport} = makeTransport({
+        states: [{'1': 1}],
+        objectRecord: [{id: 59, imei: '863591025852785', canArm: false}],
+    });
+    const guard = new ControlCommandGuard(500, 100);
+    try {
+        await assertThrowsControl(
+            () => executeGeoritmControlCommand(makeContext(), 'arm', 1, {transport, guard, ...clock, windowMs: 200, intervalMs: 50}),
+            'no-permission', 'canArm=false из obj/',
+        );
+        assertEqual(writeCalls(calls), 0, 'write не выполнялся');
+    } finally {
+        delete process.env[CONTROL_GATE];
+    }
+});
+
+test('E13.3 Обогащение: canArm отсутствует/null/некорректного типа в objects/obj/ → unknown-capability', async () => {
+    process.env[CONTROL_GATE] = 'true';
+    const clock = makeFakeClock();
+    const guard = new ControlCommandGuard(500, 100);
+    const cases = [
+        [{id: 59, imei: '863591025852785'}, 'canArm отсутствует в obj/'],
+        [{id: 59, imei: '863591025852785', canArm: null}, 'canArm=null в obj/'],
+        [{id: 59, imei: '863591025852785', canArm: 1}, 'canArm=1 (число) в obj/'],
+        [{id: 59, imei: '863591025852785', canArm: 'true'}, 'canArm="true" (строка) в obj/'],
+    ];
+    try {
+        for (const [record, title] of cases) {
+            const {calls, transport} = makeTransport({states: [{'1': 1}], objectRecord: [record]});
+            await assertThrowsControl(
+                () => executeGeoritmControlCommand(makeContext(), 'arm', 1, {transport, guard, ...clock, windowMs: 200, intervalMs: 50}),
+                'unknown-capability', title,
+            );
+            assertEqual(writeCalls(calls), 0, `${title}: write не выполнялся`);
+        }
+    } finally {
+        delete process.env[CONTROL_GATE];
+    }
+});
+
+test('E13.4 Обогащение: IMEI отсутствует в objects/obj/ → unknown-capability, objects/state/ не вызывался', async () => {
+    process.env[CONTROL_GATE] = 'true';
+    const clock = makeFakeClock();
+    const {calls, transport} = makeTransport({
+        states: [{'1': 1}],
+        objectRecord: [{id: 59, canArm: true}],
+    });
+    const guard = new ControlCommandGuard(500, 100);
+    try {
+        await assertThrowsControl(
+            () => executeGeoritmControlCommand(makeContext(), 'arm', 1, {transport, guard, ...clock, windowMs: 200, intervalMs: 50}),
+            'unknown-capability', 'IMEI отсутствует в obj/',
+        );
+        assertEqual(calls.state.length, 0, 'objects/state/ по отсутствующему IMEI не вызывался');
+        assertEqual(writeCalls(calls), 0, 'write не выполнялся');
+    } finally {
+        delete process.env[CONTROL_GATE];
+    }
+});
+
+test('E13.5 Обогащение: ошибка objects/obj/ → управление запрещено (unknown), данные не выдумываются', async () => {
+    process.env[CONTROL_GATE] = 'true';
+    const clock = makeFakeClock();
+    const {calls, transport} = makeTransport({states: [{'1': 1}], objectRecord: 'error'});
+    const guard = new ControlCommandGuard(500, 100);
+    try {
+        await assertThrowsControl(
+            () => executeGeoritmControlCommand(makeContext(), 'arm', 1, {transport, guard, ...clock, windowMs: 200, intervalMs: 50}),
+            'unknown-capability', 'ошибка obj/ — запрет',
+        );
+        assertEqual(calls.state.length, 0, 'objects/state/ без IMEI не вызывался');
+        assertEqual(writeCalls(calls), 0, 'write не выполнялся');
+    } finally {
+        delete process.env[CONTROL_GATE];
+    }
+});
+
+test('E13.6 Обогащение: запись другого объекта в objects/obj/ отбрасывается целиком', async () => {
+    process.env[CONTROL_GATE] = 'true';
+    const clock = makeFakeClock();
+    const {calls, transport} = makeTransport({
+        states: [{'1': 1}],
+        objectRecord: [{id: 60, imei: '999999999999999', canArm: true}],
+    });
+    const guard = new ControlCommandGuard(500, 100);
+    try {
+        await assertThrowsControl(
+            () => executeGeoritmControlCommand(makeContext(), 'arm', 1, {transport, guard, ...clock, windowMs: 200, intervalMs: 50}),
+            'unknown-capability', 'данные чужого объекта не используются',
+        );
+        assertEqual(calls.state.length, 0, 'IMEI другого объекта не разрешался');
+        assertEqual(writeCalls(calls), 0, 'write не выполнялся');
+    } finally {
+        delete process.env[CONTROL_GATE];
+    }
+});
+
+test('E13.7 Обогащение: из нескольких записей objects/obj/ используется строго совпавшая по id', async () => {
+    process.env[CONTROL_GATE] = 'true';
+    const clock = makeFakeClock();
+    const {calls, transport} = makeTransport({
+        states: [{'1': 1}, {'1': 1}, {'1': 2}, {'1': 2}],
+        objectRecord: [
+            {id: 60, imei: '999999999999999', canArm: true},
+            {id: 59, imei: '863591025852785', canArm: true},
+        ],
+    });
+    const guard = new ControlCommandGuard(500, 100);
+    try {
+        const result = await executeGeoritmControlCommand(makeContext(), 'arm', 1, {
+            transport, guard, ...clock, windowMs: 2000, intervalMs: 50,
+        });
+        assertEqual(result.result, 'confirmed', 'команда исполнена');
+        assertEqual(calls.arm, [{basic: 'TESTBASIC', imei: '863591025852785', area: 1}],
+            'команда с IMEI совпавшей записи, не другой');
+    } finally {
+        delete process.env[CONTROL_GATE];
+    }
+});
+
+test('E13.8 Обогащение: restricted=1 из objects/obj/ → no-permission при canArm=true', async () => {
+    process.env[CONTROL_GATE] = 'true';
+    const clock = makeFakeClock();
+    const {calls, transport} = makeTransport({
+        states: [{'1': 1}],
+        objectRecord: [{id: 59, imei: '863591025852785', canArm: true, restricted: 1}],
+    });
+    const guard = new ControlCommandGuard(500, 100);
+    try {
+        await assertThrowsControl(
+            () => executeGeoritmControlCommand(makeContext(), 'arm', 1, {transport, guard, ...clock, windowMs: 200, intervalMs: 50}),
+            'no-permission', 'restricted=1 из obj/',
+        );
+        assertEqual(writeCalls(calls), 0, 'write не выполнялся');
+    } finally {
+        delete process.env[CONTROL_GATE];
+    }
+});
+
+test('E13.9 DTO-путь: getGeoritmControlState обогащает контекст objects/obj/ и вычисляет доступность', async () => {
+    process.env[CONTROL_GATE] = 'true';
+    const mock = makeFetchMock();
+    mock.install(({url}) => url.includes('obj/json')
+        ? {status: 200, body: [{id: 59, imei: '863591025852785', canArm: true, objType: '1'}]}
+        : url.includes('obj-areas')
+            ? {status: 200, body: [{num: 1, name: 'Торговый зал'}]}
+            : {status: 200, body: {state: {'1': 1}}});
+    try {
+        // makeContext() — target без imei/canArm; без обогащения DTO был бы unknown.
+        const state = await getGeoritmControlState(makeContext());
+        assertEqual(state.enabled, true, 'управление включено');
+        assertEqual(state.availability, 'available', 'состояние известно');
+        const partition1 = state.partitions.find((partition) => partition.num === 1);
+        assertEqual(partition1?.guarded, false, 'раздел снят');
+        assertEqual(partition1?.arm, 'available', 'arm доступен (canArm=true из obj/)');
+        assertEqual(partition1?.disarm, 'available', 'disarm доступен');
+        assert(!JSON.stringify(state).includes('863591025852785'), 'IMEI отсутствует в DTO');
+        assertEqual(mock.calls[0].url, `${BASE}/restapi/objects/obj/json`, 'первый вызов — objects/obj/');
+        assertEqual(mock.calls[0].body, {objectId: [59]}, 'objects/obj/ вызван по id владеемого объекта');
+    } finally {
+        mock.restore();
+        delete process.env[CONTROL_GATE];
+    }
 });
 
 // ——————————————————————————————— demo-аналог ————————
@@ -766,6 +1059,89 @@ test('E12.24 Demo: состояния разделов, ownership, команд�
         assert(foreign instanceof ControlError && foreign.reason === 'not-owned', 'чужой объект — not-owned');
     } finally {
         delete process.env[CONTROL_GATE];
+    }
+});
+
+// ———————————————————— E16: capability-driven видимость ————————
+
+test('E16.1 applyControlGateToState: gate off помечает канал команд, capability-факты сохраняются', () => {
+    const state = {
+        enabled: true,
+        availability: 'available',
+        partitions: [
+            {num: 1, name: 'Торговый зал', guarded: false, arm: 'available', disarm: 'available'},
+            {num: 2, name: 'Склад', guarded: null, arm: 'unknown', disarm: 'unknown'},
+        ],
+    };
+    const gated = applyControlGateToState(state, false);
+    assertEqual(gated.enabled, false, 'канал команд помечен выключенным (Safe Preview)');
+    assertEqual(gated.partitions, state.partitions,
+        'capability-оценка разделов сохранена: видимость управления определяется данными учётной записи');
+    assertEqual(applyControlGateToState(state, true), state, 'gate on — DTO без изменений');
+});
+
+test('E16.2 DTO: два объекта одной учётной записи с разными правами — capability вычисляется per-object', async () => {
+    process.env[CONTROL_GATE] = 'true';
+    const mock = makeFetchMock();
+    // Один пользователь, два объекта: у 59 canArm=true (аналог учётной записи
+    // №2, объект 64), у 60 canArm отсутствует (аналог учётной записи №1,
+    // объект 59). Ответ obj/ подбирается по запрошенному id — как на сервере.
+    mock.install(({url, body}) => url.includes('obj/json')
+        ? {
+            status: 200,
+            body: [body.objectId[0] === 59
+                ? {id: 59, imei: '863591025852785', canArm: true, objType: '1'}
+                : {id: 60, imei: '863591025852786', objType: '1'}],
+        }
+        : url.includes('obj-areas')
+            ? {status: 200, body: [{num: 1, name: 'Раздел'}]}
+            : {status: 200, body: {state: {'1': 1}}});
+    try {
+        const allowed = await getGeoritmControlState(makeContext());
+        const partition59 = allowed.partitions.find((partition) => partition.num === 1);
+        assertEqual(partition59.arm, 'available', 'объект 59 (canArm=true): управление подтверждено');
+
+        const denied = await getGeoritmControlState(makeContext({
+            objectId: '60',
+            target: {id: 60, extId: 90060, name: 'Объект без canArm', objType: '1'},
+        }));
+        const partition60 = denied.partitions.find((partition) => partition.num === 1);
+        assertEqual(partition60.arm, 'unknown', 'объект 60 (canArm отсутствует): безопасный запрет');
+        assert(partition60.arm !== partition59.arm,
+            'разные объекты одной учётной записи получают разные вердикты — capability не переносится');
+    } finally {
+        mock.restore();
+        delete process.env[CONTROL_GATE];
+    }
+});
+
+test('E16.3 DTO при выключенном gate: реальная capability-оценка + пометка канала команд', async () => {
+    // getGeoritmControlState сам gate не проверяет (решение — в диспетчере
+    // источника); связка «оценка на реальных данных + gate off» повторяет
+    // вызов диспетчера getObjectControlState для GEORITM (E16).
+    const savedGate = process.env[CONTROL_GATE];
+    delete process.env[CONTROL_GATE];
+    const mock = makeFetchMock();
+    mock.install(({url}) => url.includes('obj/json')
+        ? {status: 200, body: [{id: 59, imei: '863591025852785', canArm: true, objType: '1'}]}
+        : url.includes('obj-areas')
+            ? {status: 200, body: [{num: 1, name: 'Торговый зал'}]}
+            : {status: 200, body: {state: {'1': 1}}});
+    try {
+        const state = await getGeoritmControlState(makeContext());
+        const gated = applyControlGateToState(state, parseControlGate(process.env[CONTROL_GATE]));
+        assertEqual(gated.enabled, false, 'gate выключен — канал команд помечен');
+        assertEqual(gated.availability, 'available', 'capability-данные получены и при выключенном gate');
+        const partition1 = gated.partitions.find((partition) => partition.num === 1);
+        assertEqual(partition1.arm, 'available', 'подтверждённый раздел остаётся подтверждённым');
+        assert(!JSON.stringify(gated).includes('863591025852785'), 'IMEI отсутствует в DTO');
+    } finally {
+        mock.restore();
+        if (savedGate === undefined) {
+            delete process.env[CONTROL_GATE];
+        } else {
+            process.env[CONTROL_GATE] = savedGate;
+        }
     }
 });
 

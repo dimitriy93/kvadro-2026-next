@@ -6,6 +6,7 @@ import {
     getSessionUser,
 } from '@/lib/account';
 import type {ControlAction, ControlErrorReason} from '@/lib/account';
+import {isGeoritmControlEnabled} from '@/lib/account/control-gate';
 import {GeoritmApiError} from '@/lib/georitm/api-client';
 
 export const runtime = 'nodejs';
@@ -29,7 +30,6 @@ const REASON_STATUS: Readonly<Record<ControlErrorReason, number>> = {
     'unsupported': 403,
     'unknown-capability': 403,
     'unknown-area': 400,
-    'unknown-state': 409,
     'already-in-state': 409,
     'in-flight': 409,
     'cooldown': 409,
@@ -45,11 +45,12 @@ const REASON_STATUS: Readonly<Record<ControlErrorReason, number>> = {
  *  - браузер передаёт только {action, areaNum}: IMEI, номера объектов
  *    GEORITM и разделы разрешаются исключительно на сервере после
  *    проверки владения объектом и прав пользователя (контракт E11);
- *  - feature gate GEORITM_CONTROL_ENABLED проверяется дважды (маршрут
- *    и georitm-control) — при выключенном gate (текущее состояние E12)
- *    возвращается 403 с пометкой controlDisabled и НИ ОДНОГО вызова
- *    write-методов GEORITM не происходит; браузер и demo-режим обойти
- *    запрет не могут;
+ *  - feature gate GEORITM_CONTROL_ENABLED проверяется трижды: в маршруте
+ *    ДО ownership-чтений, в источнике и в georitm-control. При выключенном
+ *    gate (текущее состояние E12) маршрут отвечает 403 с пометкой
+ *    controlDisabled и не выполняет НИ ОДНОГО вызова GEORITM — ни write-,
+ *    ни read- (ownership-чтения findObjectForUser выполняются только при
+ *    включённом gate, E14); браузер и demo-режим обойти запрет не могут;
  *  - результат — честная трёхзначность: 'confirmed' только по фактическому
  *    переходу состояния objects/state/, {success: 1} успехом не считается;
  *  - повторная отправка при неопределённом результате блокируется
@@ -94,6 +95,21 @@ export const POST = async (
             return NextResponse.json(
                 {success: false, error: 'Некорректный запрос управления'},
                 {status: 400, headers: NO_STORE},
+            );
+        }
+
+        // Feature gate — до ownership-чтений (E14): при выключенном gate
+        // маршрут не выполняет ни одного вызова GEORITM (findObjectForUser
+        // ниже делает read-запросы tree-set/obj/, которые при выключенном
+        // gate не нужны). Ответ одинаков для несуществующего, чужого и
+        // своего объекта — существование объектов не раскрывается; отзыв
+        // сессии при 401 GEORITM на этом маршруте при выключенном gate
+        // недостижим (вызовов нет) и сохранён на всех остальных путях
+        // (страницы, partitions) и здесь при включённом gate.
+        if (!isGeoritmControlEnabled()) {
+            return NextResponse.json(
+                {success: false, error: 'Управление охраной отключено', controlDisabled: true},
+                {status: 403, headers: NO_STORE},
             );
         }
 

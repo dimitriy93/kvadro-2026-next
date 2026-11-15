@@ -10,7 +10,9 @@
     "georitm:check": "node scripts/georitm-diagnostics.mjs",
     "georitm:events": "node scripts/georitm-events-diagnostics.mjs",
     "events:smoke": "node scripts/event-journal-smoke.mjs",
-    "control:smoke": "node scripts/control-smoke.mjs"
+    "control:smoke": "node scripts/control-smoke.mjs",
+    "control-ui:smoke": "node scripts/control-ui-smoke.mjs",
+    "source:smoke": "node scripts/source-smoke.mjs"
   },
   "keywords": [],
   "author": "",

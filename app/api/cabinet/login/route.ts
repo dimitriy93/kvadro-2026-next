@@ -1,5 +1,6 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {
+    getAccountDataSource,
     getSessionSecret,
     isDemoLoginEnabled,
     isSessionCookieSecure,
@@ -73,13 +74,16 @@ const clearAttempts = (key: string): void => {
 
 /**
  * Вход в кабинет. Учётные данные проверяет текущий источник данных
- * (ACCOUNT_DATA_SOURCE): 'demo' — тестовые учётные записи только вне
+ * (getAccountDataSource): 'demo' — тестовые учётные записи только вне
  * production; 'georitm' — users/login/ GEORITM с созданием серверной
  * сессии (credentials только на сервере, в cookie — непрозрачный ID).
+ * Источник определяется единой функцией source-config (E15): в production
+ * маршрут работает только с GEORITM — demo-вход не активируется ни при
+ * каком значении ACCOUNT_DATA_SOURCE.
  */
 export const POST = async (request: NextRequest): Promise<NextResponse> => {
     try {
-        const source = process.env.ACCOUNT_DATA_SOURCE?.trim().toLowerCase() === 'georitm' ? 'georitm' : 'demo';
+        const source = getAccountDataSource();
 
         if (source === 'demo' && (!isDemoLoginEnabled() || !getSessionSecret())) {
             return NextResponse.json(

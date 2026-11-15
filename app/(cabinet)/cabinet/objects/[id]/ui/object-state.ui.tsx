@@ -2,6 +2,7 @@ import type {CommunicationDiagnostics, MonitorObject, ObjectControlState, Object
 import {ObjectPageHeader} from './object-page-header.ui';
 import {ObjectCommunicationView} from './object-communication.ui';
 import {ObjectControlSection} from './object-control.ui';
+import {deriveSafePreviewPartitions} from './object-control.shared';
 import {ObjectStateBadge} from '@/app/(cabinet)/cabinet/ui/object-state-badge.ui';
 import {ZONE_SYSTEM_NAMES} from '@/app/(cabinet)/cabinet/ui/state-meta';
 import {formatDateTime} from '@/app/(cabinet)/cabinet/ui/format';
@@ -22,8 +23,9 @@ interface IObjectStateViewProps {
     power?: PowerDiagnostics | null;
     /**
      * Состояние управления охраной (E12); null — загрузка завершилась
-     * ошибкой. При выключенном feature gate enabled=false — секция
-     * управления не рендерится вовсе.
+     * ошибкой (секция показывает сообщение, не имитируя управление).
+     * При выключенном feature gate enabled=false — Safe Preview (E13.1):
+     * демонстрационная секция без реальных команд.
      */
     control?: ObjectControlState | null;
     /** true — демонстрационный источник данных; false — реальные данные GEORITM. */
@@ -91,6 +93,15 @@ export const ObjectStateView = (
         && faults.length === 0
         && object.securityAlarm === 'fault';
 
+    // Safe Preview (E13.1) — ТОЛЬКО демонстрационный источник: разделы
+    // выводятся из уже загруженных DTO зон, без новых запросов. Для реального
+    // источника GEORITM preview не используется (E16): capability-aware
+    // разделы приходят в самом DTO управления — секция скрывается целиком,
+    // если подтверждённых разделов нет (декоративные кнопки недопустимы).
+    const safePreview = control !== null && !control.enabled && isDemoData && !zonesLoadFailed
+        ? deriveSafePreviewPartitions(zones)
+        : null;
+
     return (
         <>
             <ObjectPageHeader object={object} activeTab="state" userId={userId} isDemoData={isDemoData}/>
@@ -126,10 +137,26 @@ export const ObjectStateView = (
                 </div>
             </section>
 
-            {/* Управление охраной (E12): при выключенном feature gate секция
-                не рендерится — UI не создаёт impression управления. */}
-            {control && (
-                <ObjectControlSection objectId={object.id} objectName={object.name} initial={control}/>
+            {/* Управление охраной (E12, capability-aware preview E16): при
+                выключенном feature gate реальный источник показывает только
+                подтверждённые разделы (без команд); секция скрывается целиком,
+                если подтверждённых разделов нет. Ошибка загрузки — отдельное
+                сообщение без имитации доступности управления. */}
+            {control === null ? (
+                <section className="obj-section" aria-label="Управление охраной">
+                    <h2 className="obj-section__title">Управление охраной</h2>
+                    <p className="obj-zones-error" role="alert">
+                        Не удалось загрузить данные управления охраной. Попробуйте обновить страницу позже.
+                    </p>
+                </section>
+            ) : (
+                <ObjectControlSection
+                    objectId={object.id}
+                    objectName={object.name}
+                    initial={control}
+                    preview={safePreview}
+                    isDemoData={isDemoData}
+                />
             )}
 
             <section className="obj-section" aria-label="Техническое состояние">
