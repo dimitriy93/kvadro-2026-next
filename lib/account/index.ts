@@ -58,7 +58,7 @@ export {
     findObjectForUser,
     getChannelsForObject,
     getDiagnosticsForObject,
-    getEventsForObject,
+    getEventsPageForObject,
     getObjectsForUser,
     getPowerForObject,
     getReportForObject,
@@ -69,4 +69,16 @@ export {
     performLogout,
     REPORT_MAX_PERIOD_DAYS,
     verifyCredentials,
+    type EventsPageResult,
 } from './source';
+export {
+    decodeEventCursor,
+    encodeEventCursor,
+    type EventCursorPayload,
+} from './event-cursor';
+export {
+    fetchEventJournalPage,
+    type EventJournalCursor,
+    type EventJournalDirection,
+    type EventJournalPage,
+} from './event-journal';

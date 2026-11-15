@@ -624,6 +624,44 @@ export const georitmHistoryByObject = async (basic: string, objectId: number): P
     return records;
 };
 
+/**
+ * История за период alerts/history-on-obj/ (read-only, E10). Контракт
+ * подтверждён пробой на сервере 2.27.0 (docs/development/17):
+ *  - from/to — Unix time В МИЛЛИСЕКУНДАХ (окно в секундах даёт пустой ответ);
+ *  - фильтрация и сортировка идут по receivedAt (времени получения
+ *    станцией), а не по alertTs: записи с alertTs из 2003 г., но
+ *    receivedAt в 2026 г., возвращаются окном 2026 года;
+ *  - границы включающие на миллисекундной точности; у действий
+ *    (ObjectAlertLog) хранимая метка суб-секундная — сериализованное
+ *    receivedAt может отличаться от хранимого до ~1 с, поэтому границы
+ *    порций обязаны перекрываться с дедупликацией по id (слой event-journal);
+ *  - параметров limit/offset/cursor нет, ответ — все записи окна;
+ *    from=null → «со времени последнего сброса», to=null → «по текущее
+ *    время» (кабинет всегда передаёт обе границы явно);
+ *  - чужой/несуществующий objectId → HTTP 401 (поэтому вызов выполняется
+ *    только после собственной проверки владения в GeoritmSource).
+ *
+ * Ожидаемый формат — плоский массив; неожиданный формат — ошибка, а не
+ * пустой список: отсутствие данных не должно выглядеть как «истории нет».
+ */
+export const georitmHistoryOnObject = async (
+    basic: string,
+    objectId: number,
+    fromMs: number,
+    toMs: number,
+): Promise<GeoritmHistoryRecord[]> => {
+    const response = await callGeoritm<GeoritmHistoryRecord[] | {alerts?: GeoritmHistoryRecord[]; history?: GeoritmHistoryRecord[]}>(
+        'alerts/history-on-obj/',
+        {objectId, from: fromMs, to: toMs},
+        basic,
+    );
+    const records = Array.isArray(response) ? response : response?.alerts ?? response?.history;
+    if (!Array.isArray(records)) {
+        throw new GeoritmApiError('http', 200, null, 'Неожиданный формат alerts/history-on-obj/');
+    }
+    return records;
+};
+
 /** Собирает плоский список объектов из рекурсивного дерева групп. */
 export const flattenGeoritmTree = (groups: GeoritmObjectGroup[]): GeoritmObjectSummary[] => {
     const result: GeoritmObjectSummary[] = [];

@@ -22,6 +22,13 @@ import {
     deleteSession,
     getSessionRecord,
 } from './session-store';
+import {
+    fetchEventJournalPage,
+    type EventJournalCursor,
+    type EventJournalDirection,
+    type EventJournalPage,
+    type JournalEntry,
+} from './event-journal';
 import {getAlertTemplatesByCode} from '@/lib/georitm/alert-template-cache';
 import {
     GeoritmApiError,
@@ -29,6 +36,7 @@ import {
     flattenGeoritmTree,
     georitmChannels,
     georitmHistoryByObject,
+    georitmHistoryOnObject,
     georitmLogin,
     georitmLogout,
     georitmObjectCard,
@@ -44,6 +52,7 @@ import {
     type GeoritmChannelSignal,
     type GeoritmChannelsResponse,
     type GeoritmDevice,
+    type GeoritmHistoryRecord,
     type GeoritmObjectAlert,
     type GeoritmObjectAlertLog,
     type GeoritmObjectCard,
@@ -985,61 +994,193 @@ const toEventFromAlertLog = (
 };
 
 /**
- * Журнал событий объекта через alerts/history-by-obj/ (E2.1). Записи двух
- * типов (ObjectAlert/ObjectAlertLog) нормализуются в единый DTO и сортируются
- * по occurredAt от новых к старым (порядок ответа GEORITM не гарантирован).
- * Инкрементальный опрос через history-on-obj/ — отдельный будущий этап.
+ * Журнал событий объекта постранично (E10) через общий движок
+ * event-journal. Первая страница строится из «головы» — history-by-obj/
+ * (новейшие ≤1000 событий + ≤1000 действий, один запрос); последующие —
+ * шагающими окнами alerts/history-on-obj/ от якорной границы. Доступ —
+ * как во всех методах: объект должен присутствовать в выдаче
+ * objects-tree-set/ текущего пользователя, вызовы alerts/* выполняются
+ * только после этой проверки (чужой objectId даёт от GEORITM 401).
  */
-export const getGeoritmEventsForObject = async (
+
+// ——————————————— Постраничный журнал событий (E10) ————————
+
+/** Документированный предел history-by-obj/: «последние 1000 действий и 1000 событий». */
+const HISTORY_CAP_PER_KIND = 1000;
+
+/** Пустая страница (чужой/несуществующий объект). */
+const EMPTY_EVENTS_PAGE: EventJournalPage = {
+    events: [],
+    hasMore: false,
+    depthLimited: false,
+    bottomCursor: null,
+    upperCursor: null,
+};
+
+/** Результат постраничной загрузки журнала вместе со справочными данными UI. */
+export interface GeoritmEventsPage {
+    page: EventJournalPage;
+    /** Типы, встречающиеся в журнале (для чипов фильтра); может быть неполным. */
+    availableTypes: MonitorEventType[];
+    /** Точный total источнику GEORITM неизвестен — всегда null. */
+    totalEvents: number | null;
+}
+
+const countByKind = (records: GeoritmHistoryRecord[], kind: 'ObjectAlert' | 'ObjectAlertLog'): number =>
+    records.filter((record) => record?.type === kind).length;
+
+/** Голова усечена сервером — глубже её покрытия могут быть записи. */
+const isHistoryCapped = (records: GeoritmHistoryRecord[]): boolean =>
+    countByKind(records, 'ObjectAlert') >= HISTORY_CAP_PER_KIND
+    || countByKind(records, 'ObjectAlertLog') >= HISTORY_CAP_PER_KIND;
+
+/**
+ * Метка receivedAt записи в миллисекундах — ключ постраничного порядка.
+ * Подтверждено пробой (E10): history-on-obj/ фильтрует и сортирует именно
+ * по receivedAt. У событий без receivedAt (не встречались на сервере)
+ * используется alertTs — запись не выбрасывается, но её позиция может
+ * отличаться от серверной сортировки; отмечено как ограничение.
+ */
+const recordReceivedAtMs = (record: GeoritmHistoryRecord, fallbackMs: number): number =>
+    typeof record.receivedAt === 'number' && Number.isFinite(record.receivedAt) && record.receivedAt > 0
+        ? record.receivedAt
+        : fallbackMs;
+
+/** Нормализация ответа history-* в записи движка. Неизвестные типы — пропуск. */
+const toJournalEntries = (
+    records: GeoritmHistoryRecord[],
+    templates: Map<number, GeoritmAlertTemplate>,
     objectId: string,
-    eventType?: MonitorEventType,
-): Promise<MonitorObjectEvent[] | null> => {
+): JournalEntry[] => {
+    const entries: JournalEntry[] = [];
+    for (const [index, record] of records.entries()) {
+        if (!record || typeof record !== 'object') {
+            continue;
+        }
+        if (record.type === 'ObjectAlertLog') {
+            const event = toEventFromAlertLog(record as GeoritmObjectAlertLog, objectId, index);
+            // У действия occurredAt = receivedAt — метка порядка совпадает с ней.
+            if (event) {
+                entries.push({event, receivedAtMs: Date.parse(event.occurredAt)});
+            }
+        } else if (record.type === 'ObjectAlert') {
+            const event = toEventFromAlert(record as GeoritmObjectAlert, templates, objectId, index);
+            if (event) {
+                entries.push({event, receivedAtMs: recordReceivedAtMs(record, Date.parse(event.occurredAt))});
+            }
+        }
+    }
+    return entries;
+};
+
+/**
+ * Окно alerts/history-on-obj/ в записях движка. Границы передаются как
+ * есть (миллисекунды, включающие); перекрытие окон и дедупликация по id —
+ * в движке: у действий хранимая метка суб-секундная, неперекрывающиеся
+ * границы теряли бы записи на стыках (проба E10).
+ */
+const fetchGeoritmWindow = async (
+    auth: {basic: string; user: PublicAccountUser},
+    georitmObjectId: number,
+    objectId: string,
+    fromMs: number,
+    toMs: number,
+): Promise<JournalEntry[]> => {
+    const [records, templates] = await Promise.all([
+        georitmHistoryOnObject(auth.basic, georitmObjectId, fromMs, toMs),
+        getAlertTemplatesByCode(auth.basic, auth.user.id),
+    ]);
+    return toJournalEntries(records, templates, objectId);
+};
+
+// ——————— Кэш типов журнала для чипов фильтра ———————
+
+/**
+ * Типы, встречающиеся в журнале объекта, вычисляются из «головы»
+ * (history-by-obj/) и кэшируются в памяти процесса: страницы 2+ не видят
+ * полный журнал, а чипы фильтра должны оставаться прежними. Кэш
+ * изолирован парой «пользователь:объект», TTL 10 минут (как у справочника
+ * шаблонов), переживать рестарт не обязан — при холодном кэше чипы
+ * строятся по текущей странице. Значение — только список кодов типов,
+ * персональных данных не содержит.
+ */
+const AVAILABLE_TYPES_TTL_MS = 10 * 60 * 1000;
+const availableTypesCache = new Map<string, {types: MonitorEventType[]; expiresAt: number}>();
+
+const rememberAvailableTypes = (userId: string, objectId: string, entries: JournalEntry[]): void => {
+    const types = new Set<MonitorEventType>();
+    for (const entry of entries) {
+        types.add(entry.event.type);
+    }
+    if (types.size > 0) {
+        availableTypesCache.set(`${userId}:${objectId}`, {
+            types: [...types],
+            expiresAt: Date.now() + AVAILABLE_TYPES_TTL_MS,
+        });
+    }
+};
+
+const readAvailableTypes = (userId: string, objectId: string, pageEvents: MonitorObjectEvent[]): MonitorEventType[] => {
+    const cached = availableTypesCache.get(`${userId}:${objectId}`);
+    if (cached && cached.expiresAt > Date.now()) {
+        return cached.types;
+    }
+    // Холодный кэш (рестарт процесса или истечение TTL): чипы по текущей
+    // странице — неполно, но корректно; полный набор восстановится при
+    // возврате на первую страницу.
+    return [...new Set(pageEvents.map((event) => event.type))];
+};
+
+export const getGeoritmEventsPageForObject = async (
+    objectId: string,
+    pageSize: number,
+    eventType: MonitorEventType | undefined,
+    cursor: EventJournalCursor | null,
+    direction: EventJournalDirection,
+): Promise<GeoritmEventsPage> => {
     const auth = await resolveGeoritmAuth();
     if (!auth) {
-        return null;
+        throw new GeoritmApiError('network', null, null, 'Нет активной сессии GEORITM');
     }
 
     try {
-        // Доступ проверяется тем же способом, что и в остальных методах:
-        // объект должен присутствовать в выдаче objects-tree-set/ текущего
-        // пользователя. Прямого вызова alerts/* без проверки нет.
         const owned = await fetchOwnedObjects(auth.basic);
         const target = owned.find((object) => String(object.id) === objectId);
         if (!target) {
-            // Чужой и несуществующий объект — пусто; страница при этом уже
-            // показала 404 (findObjectForUser), здесь защита в глубину.
-            return [];
+            // Чужой и несуществующий объект неотличимы; страница при этом
+            // уже показала 404 (findObjectForUser), здесь защита в глубину.
+            return {page: EMPTY_EVENTS_PAGE, availableTypes: [], totalEvents: null};
         }
 
-        const [records, templates] = await Promise.all([
-            georitmHistoryByObject(auth.basic, target.id),
-            getAlertTemplatesByCode(auth.basic, auth.user.id),
-        ]);
+        const page = await fetchEventJournalPage({
+            pageSize,
+            eventType,
+            cursor,
+            direction,
+            windowFetch: (fromMs, toMs) => fetchGeoritmWindow(auth, target.id, objectId, fromMs, toMs),
+            ...(cursor === null
+                ? {
+                    headFetch: async () => {
+                        const [records, templates] = await Promise.all([
+                            georitmHistoryByObject(auth.basic, target.id),
+                            getAlertTemplatesByCode(auth.basic, auth.user.id),
+                        ]);
+                        const entries = toJournalEntries(records, templates, objectId);
+                        rememberAvailableTypes(auth.user.id, objectId, entries);
+                        return {entries, capped: isHistoryCapped(records)};
+                    },
+                }
+                : {}),
+        });
 
-        const events: MonitorObjectEvent[] = [];
-        for (const [index, record] of records.entries()) {
-            if (!record || typeof record !== 'object') {
-                continue;
-            }
-            const event = record.type === 'ObjectAlertLog'
-                ? toEventFromAlertLog(record as GeoritmObjectAlertLog, objectId, index)
-                : record.type === 'ObjectAlert'
-                    ? toEventFromAlert(record as GeoritmObjectAlert, templates, objectId, index)
-                    : null; // Неизвестный тип записи — пропуск, не ошибка загрузки.
-            if (event) {
-                events.push(event);
-            }
-        }
-
-        const sorted = events.sort(
-            (a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt),
-        );
-        return eventType
-            ? sorted.filter((event) => event.type === eventType)
-            : sorted;
+        return {
+            page,
+            availableTypes: readAvailableTypes(auth.user.id, objectId, page.events),
+            totalEvents: null,
+        };
     } catch (error) {
         if (error instanceof GeoritmApiError && error.isUnauthorized) {
-            deleteSession(auth.sessionId);
+            await revokeSessionOnUnauthorized(auth);
         }
         throw error;
     }

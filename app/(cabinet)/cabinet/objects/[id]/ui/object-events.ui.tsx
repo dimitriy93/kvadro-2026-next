@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type {MonitorEventType, MonitorObject, MonitorObjectEvent} from '@/lib/account';
 import {cabinetObjectRoute} from '@/config/routes/cabinet.routes';
 import {ObjectPageHeader} from './object-page-header.ui';
@@ -7,36 +8,47 @@ import {formatDateTime} from '@/app/(cabinet)/cabinet/ui/format';
 import type {StateTone} from '@/app/(cabinet)/cabinet/ui/state-meta';
 import './object-events.styles.scss';
 
-/** Данные для управления пагинацией; задаётся серверной страницей журнала. */
+/**
+ * Пагинация журнала; ссылки навигации строит серверная страница
+ * (якорь позиции кодируется на сервере). total известен только источникам
+ * с полным журналом (демо) — иначе фиктивное количество не показывается.
+ */
 export interface IObjectEventsPagination {
-    basePath: string;
-    activeType: string;
     page: number;
     pageSize: number;
-    pageCount: number;
-    total: number;
+    shown: number;
+    hasMore: boolean;
+    total: number | null;
+    prevHref: string | null;
+    nextHref: string | null;
+    rangeFrom: number;
+    rangeTo: number;
+    basePath: string;
+    activeType: string;
 }
 
 interface IObjectEventsViewProps {
     object: MonitorObject;
     /** События текущей страницы (от новых к старым). */
     events: MonitorObjectEvent[];
-    /** Общее количество записей журнала после фильтрации. */
-    totalEvents: number;
-    /** Типы, встречающиеся в полном журнале объекта — для чипов фильтра. */
+    /** Общее количество записей журнала после фильтрации; null — источнику неизвестно. */
+    totalEvents: number | null;
+    /** Типы, встречающиеся в журнале объекта — для чипов фильтра. */
     availableTypes: readonly MonitorEventType[];
     /** Активный тип фильтра; undefined — «Все». */
     activeType?: MonitorEventType;
-    /** Журнал недоступен у текущего источника данных (не «пустой журнал»). */
-    unavailableNote?: string;
     /** Примечание в подвале страницы; текст задаёт серверная страница. */
     footerNote?: string;
     /** true — демонстрационный источник данных; false — реальные данные GEORITM. */
     isDemoData: boolean;
     /** id пользователя кабинета — namespace настроек разделов. */
     userId?: string;
+    /** Ссылка «Обновить» — первая страница с текущим фильтром. */
+    refreshHref?: string;
     /** Пагинация; undefined — журнал недоступен у источника данных. */
     pagination?: IObjectEventsPagination;
+    /** Загрузка остановлена ограничением глубины (конец истории не доказан). */
+    depthLimitedNote?: string;
 }
 
 const EVENT_META: Record<MonitorEventType, {label: string; tone: StateTone}> = {
@@ -70,10 +82,11 @@ export const DEMO_EVENT_FILTER_ORDER: readonly MonitorEventType[] = [
 
 /**
  * Журнал событий объекта. Записи от новых к старым; фильтр по типу —
- * серверный, через query-параметр ?type=; пагинация — серверная разбивка
- * уже полученного журнала, страница и размер хранятся в ?page=/size=.
+ * серверный, через query-параметр ?type=; страницы загружаются порциями
+ * от якорной границы (E10), страница и размер хранятся в ?page=/size=,
+ * позиция — в подписанном якоре ?c=.
  */
-export const ObjectEventsView = ({object, events, totalEvents, availableTypes, activeType, unavailableNote, footerNote, isDemoData, userId, pagination}: IObjectEventsViewProps) => {
+export const ObjectEventsView = ({object, events, totalEvents, availableTypes, activeType, footerNote, isDemoData, userId, refreshHref, pagination, depthLimitedNote}: IObjectEventsViewProps) => {
     const routes = cabinetObjectRoute(object.id);
 
     // Чипы фильтра собираются на сервере (подписи из EVENT_META), а навигация
@@ -95,8 +108,15 @@ export const ObjectEventsView = ({object, events, totalEvents, availableTypes, a
                 <div className="obj-events__head">
                     <h2 className="obj-section__title">Журнал событий</h2>
                     <div className="obj-events__head-meta">
-                        <span className="obj-events__count">Записей: {totalEvents}</span>
-                        {!unavailableNote && pagination && (
+                        {totalEvents !== null && (
+                            <span className="obj-events__count">Записей: {totalEvents}</span>
+                        )}
+                        {refreshHref && (
+                            <Link href={refreshHref} prefetch={false} className="obj-chip" aria-label="Обновить журнал с первой страницы">
+                                Обновить
+                            </Link>
+                        )}
+                        {pagination && (
                             <ObjectEventsPageSizeSelect
                                 basePath={pagination.basePath}
                                 activeType={pagination.activeType}
@@ -108,14 +128,8 @@ export const ObjectEventsView = ({object, events, totalEvents, availableTypes, a
 
                 <ObjectEventsFilters items={filterItems}/>
 
-                {unavailableNote && (
+                {events.length === 0 ? (
                     <p className="obj-empty" role="status">
-                        {unavailableNote}
-                    </p>
-                )}
-
-                {!unavailableNote && (events.length === 0 ? (
-                    <p className="obj-empty">
                         {activeType
                             ? 'Событий выбранного типа пока нет.'
                             : 'Журнал событий этого объекта пуст.'}
@@ -175,16 +189,25 @@ export const ObjectEventsView = ({object, events, totalEvents, availableTypes, a
                             );
                         })}
                     </ol>
-                ))}
+                )}
 
-                {!unavailableNote && pagination && (
+                {depthLimitedNote && (
+                    <p className="obj-events__note">{depthLimitedNote}</p>
+                )}
+
+                {pagination && (
                     <ObjectEventsPagination
-                        basePath={pagination.basePath}
-                        activeType={pagination.activeType}
                         page={pagination.page}
                         pageSize={pagination.pageSize}
-                        pageCount={pagination.pageCount}
+                        shown={pagination.shown}
+                        hasMore={pagination.hasMore}
                         total={pagination.total}
+                        prevHref={pagination.prevHref}
+                        nextHref={pagination.nextHref}
+                        rangeFrom={pagination.rangeFrom}
+                        rangeTo={pagination.rangeTo}
+                        basePath={pagination.basePath}
+                        activeType={pagination.activeType}
                     />
                 )}
 

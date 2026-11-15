@@ -6,46 +6,43 @@ import type {ChangeEvent, ReactNode} from 'react';
 import {DEFAULT_EVENT_PAGE_SIZE, EVENT_PAGE_SIZES} from './object-events-pagination.shared';
 
 /**
- * Пагинация журнала событий (E7.3.2). Источник данных (GEORITM
- * alerts/history-by-obj/) возвращает журнал целиком без серверных
- * offset/limit, поэтому разбивка выполняется на стороне приложения:
- * серверная страница режет уже отсортированный массив, а страница и
- * размер хранятся в URL (?page=, ?size=) — ссылка передаётся и
- * восстанавливается после обновления, Back/Forward работают нативно.
+ * Пагинация журнала событий (E7.3.2, постраничная загрузка E10). Источник
+ * (GEORITM) не предоставляет offset/total, поэтому страницы выбираются
+ * порциями от якорной границы: страница и размер хранятся в URL
+ * (?page=, ?size=), позиция — в подписанном якоре ?c=, который выдаёт
+ * серверная страница. Ссылки «предыдущая/следующая» приходят готовыми —
+ * якорь кодируется на сервере (секрет в браузер не попадает). Ссылка
+ * передаётся и восстанавливается после обновления, Back/Forward работают
+ * нативно.
  *
- * Значения URL-параметров валидирует серверная страница; здесь приходят
- * уже нормализованные числа.
+ * Общего количества страниц у GEORITM нет: показывается текущая страница
+ * и достоверный ориентир доступности следующей (total отображается только
+ * когда источник его знает — демо-режим). Перехода «в конец» нет:
+ * последняя страница недостижима без полной загрузки истории.
  */
 
 export {DEFAULT_EVENT_PAGE_SIZE, EVENT_PAGE_SIZES};
 
 interface IObjectEventsPaginationProps {
-    /** Базовый маршрут журнала, например /cabinet/objects/13/events. */
-    basePath: string;
-    /** Активный фильтр ?type= (без ключа) или пустая строка — «Все». */
-    activeType: string;
+    /** Текущая страница (нумерация для отображения, с 1). */
     page: number;
     pageSize: number;
-    pageCount: number;
-    /** Общее количество записей журнала после фильтрации. */
-    total: number;
+    /** Записей показано на текущей странице. */
+    shown: number;
+    /** Достоверно известно, что есть следующая страница. */
+    hasMore: boolean;
+    /** Точное общее количество после фильтра или null (GEORITM не даёт total). */
+    total: number | null;
+    /** Готовые ссылки навигации; null — действие недоступно. */
+    prevHref: string | null;
+    nextHref: string | null;
+    /** Диапазон номеров показанных записей (позиция в журнале). */
+    rangeFrom: number;
+    rangeTo: number;
+    /** Базовый маршрут журнала и активный фильтр — для селектора размера. */
+    basePath: string;
+    activeType: string;
 }
-
-/** Собирает href журнала с фильтром и пагинацией; значения по умолчанию в URL не попадают. */
-const eventsHref = (basePath: string, activeType: string, page: number, pageSize: number): string => {
-    const params = new URLSearchParams();
-    if (activeType) {
-        params.set('type', activeType);
-    }
-    if (page > 1) {
-        params.set('page', String(page));
-    }
-    if (pageSize !== DEFAULT_EVENT_PAGE_SIZE) {
-        params.set('size', String(pageSize));
-    }
-    const query = params.toString();
-    return query ? `${basePath}?${query}` : basePath;
-};
 
 /**
  * Содержимое ссылки с pending-индикатором. useLinkStatus обязан вызываться
@@ -59,12 +56,12 @@ const PageNavLinkContent = ({children, pending}: {children: ReactNode; pending: 
 );
 
 const PageNavLink = ({href, label, disabled, children}: {
-    href: string;
+    href: string | null;
     label: string;
     disabled: boolean;
     children: ReactNode;
 }) => {
-    if (disabled) {
+    if (disabled || href === null) {
         return (
             <span className="obj-page-nav__link obj-page-nav__link--disabled" aria-disabled="true" title={label}>
                 {children}
@@ -101,8 +98,8 @@ const ChevronIcon = ({direction}: {direction: 'left' | 'right'}) => (
 );
 
 /**
- * Выбор количества записей на странице. Смена размера возвращают журнал
- * на первую страницу (сброс ?page=).
+ * Выбор количества записей на странице. Смена размера возвращает журнал
+ * на первую страницу (позиция без якоря сбрасывается вместе с ?page= и ?c=).
  */
 export const ObjectEventsPageSizeSelect = ({basePath, activeType, pageSize}: {
     basePath: string;
@@ -112,7 +109,12 @@ export const ObjectEventsPageSizeSelect = ({basePath, activeType, pageSize}: {
     const router = useRouter();
 
     const handleChange = (event: ChangeEvent<HTMLSelectElement>) => {
-        router.push(eventsHref(basePath, activeType, 1, Number(event.target.value)));
+        const params = new URLSearchParams();
+        if (activeType) {
+            params.set('type', activeType);
+        }
+        params.set('size', event.target.value);
+        router.push(`${basePath}?${params.toString()}`);
     };
 
     return (
@@ -133,27 +135,39 @@ export const ObjectEventsPageSizeSelect = ({basePath, activeType, pageSize}: {
 };
 
 /**
- * Компактная навигация «|<  <<  1 / 17  >>  >|». При одной странице
- * навигация скрывается целиком — самый аккуратный вариант для типового
- * журнала, где страниц обычно немного.
+ * Компактная навигация «|<  <<  Страница N  >>». При пустой странице
+ * навигация скрывается. Без total статус — «Страница N» без общего
+ * количества: фиктивное число страниц не показывается.
  */
-export const ObjectEventsPagination = ({basePath, activeType, page, pageSize, pageCount, total}: IObjectEventsPaginationProps) => {
-    if (pageCount <= 1) {
+export const ObjectEventsPagination = ({page, pageSize, shown, hasMore, total, prevHref, nextHref, rangeFrom, rangeTo, basePath, activeType}: IObjectEventsPaginationProps) => {
+    if (shown === 0 && page === 1) {
         return null;
     }
 
-    const first = eventsHref(basePath, activeType, 1, pageSize);
-    const prev = eventsHref(basePath, activeType, page - 1, pageSize);
-    const next = eventsHref(basePath, activeType, page + 1, pageSize);
-    const last = eventsHref(basePath, activeType, pageCount, pageSize);
-
-    const from = (page - 1) * pageSize + 1;
-    const to = Math.min(page * pageSize, total);
+    const first = (() => {
+        const params = new URLSearchParams();
+        if (activeType) {
+            params.set('type', activeType);
+        }
+        if (pageSize !== DEFAULT_EVENT_PAGE_SIZE) {
+            params.set('size', String(pageSize));
+        }
+        const query = params.toString();
+        return query ? `${basePath}?${query}` : basePath;
+    })();
+    const pageCount = total !== null ? Math.max(Math.ceil(total / pageSize), 1) : null;
 
     return (
         <nav className="obj-page-nav" aria-label="Страницы журнала событий">
             <span className="obj-page-nav__range">
-                Показаны {from}–{to} из {total}
+                {shown > 0 ? (
+                    <>
+                        Показаны {rangeFrom}–{rangeTo}
+                        {total !== null ? ` из ${total}` : ''}
+                    </>
+                ) : (
+                    'Записи не найдены'
+                )}
             </span>
 
             <div className="obj-page-nav__controls">
@@ -162,21 +176,23 @@ export const ObjectEventsPagination = ({basePath, activeType, page, pageSize, pa
                         <ChevronIcon direction="left"/><span className="obj-page-nav__bar"/>
                     </span>
                 </PageNavLink>
-                <PageNavLink href={prev} label="Предыдущая страница" disabled={page <= 1}>
+                <PageNavLink href={prevHref} label="Предыдущая страница" disabled={page <= 1 || prevHref === null}>
                     <ChevronIcon direction="left"/>
                 </PageNavLink>
 
-                <span className="obj-page-nav__status" aria-label={`Страница ${page} из ${pageCount}`}>
-                    {page}&nbsp;/&nbsp;{pageCount}
+                <span
+                    className="obj-page-nav__status"
+                    aria-label={pageCount !== null ? `Страница ${page} из ${pageCount}` : `Страница ${page}`}
+                >
+                    {pageCount !== null ? (
+                        <>{page}&nbsp;/&nbsp;{pageCount}</>
+                    ) : (
+                        <>Страница&nbsp;{page}</>
+                    )}
                 </span>
 
-                <PageNavLink href={next} label="Следующая страница" disabled={page >= pageCount}>
+                <PageNavLink href={nextHref} label="Следующая страница" disabled={!hasMore || nextHref === null}>
                     <ChevronIcon direction="right"/>
-                </PageNavLink>
-                <PageNavLink href={last} label="Перейти на последнюю страницу" disabled={page >= pageCount}>
-                    <span className="obj-page-nav__first" aria-hidden="true">
-                        <span className="obj-page-nav__bar"/><ChevronIcon direction="right"/>
-                    </span>
                 </PageNavLink>
             </div>
         </nav>

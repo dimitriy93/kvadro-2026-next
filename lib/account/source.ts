@@ -12,6 +12,7 @@ import type {
     PowerDiagnostics,
     PublicAccountUser,
 } from './contracts';
+import type {EventJournalCursor, EventJournalDirection} from './event-journal';
 import {
     findDemoObjectForUser,
     getDemoChannelsForObject,
@@ -23,13 +24,16 @@ import {
     verifyDemoCredentials,
     type DemoLoginHint,
 } from './demo-data';
-import {getDemoEventsForObject, isMonitorEventType} from './demo-events';
+import {
+    getDemoEventsPageForObject,
+    isMonitorEventType,
+} from './demo-events';
 import {createSessionToken} from './session';
 import {
     findGeoritmObjectForUser,
     getGeoritmChannelsForObject,
     getGeoritmDiagnosticsForObject,
-    getGeoritmEventsForObject,
+    getGeoritmEventsPageForObject,
     getGeoritmObjectsForUser,
     getGeoritmPowerForObject,
     getGeoritmReportForObject,
@@ -139,18 +143,53 @@ export const getPowerForObject = async (objectId: string): Promise<PowerDiagnost
         : getDemoPowerForObject(objectId);
 
 /**
- * События объекта (от новых к старым) или null, если источник пока не
- * поддерживает журнал событий (методы alerts/* на реальном сервере GEORITM
- * не проверены). null нельзя заменять пустым списком — «нет данных» и
- * «событий нет» разные состояния.
+ * Постраничная порция журнала событий объекта (E10). Первая страница
+ * (cursor === null) строится из «головы» журнала, последующие — от
+ * якорной границы (подписанный курсор из ?c=); направление выборки
+ * задаёт сам курсор. Журнал больше не загружается целиком при каждом
+ * открытии страницы.
+ *
+ * `availableTypes` — типы, встречающиеся в журнале (для чипов фильтра);
+ * у демо-источника точен, у GEORITM вычисляется по последним загруженным
+ * данным и кэшируется (может быть неполным — см. georitm-source).
+ * `totalEvents` — точное общее количество после фильтра, если источник
+ * его достоверно знает (демо); GEORITM total не предоставляет — null,
+ * и UI не показывает фиктивное число страниц.
  */
-export const getEventsForObject = async (
+export interface EventsPageResult {
+    events: MonitorObjectEvent[];
+    hasMore: boolean;
+    /** Загрузка остановлена ограничением глубины; конец истории не доказан. */
+    depthLimited: boolean;
+    /** Граница ниже страницы — для «следующей страницы» (null, если !hasMore). */
+    bottomCursor: EventJournalCursor | null;
+    /** Граница над страницей — для «предыдущей страницы» (null у первой). */
+    upperCursor: EventJournalCursor | null;
+    availableTypes: readonly MonitorEventType[];
+    totalEvents: number | null;
+}
+
+export const getEventsPageForObject = async (
     objectId: string,
-    eventType?: MonitorEventType,
-): Promise<MonitorObjectEvent[] | null> =>
-    getAccountDataSource() === 'georitm'
-        ? getGeoritmEventsForObject(objectId, eventType)
-        : getDemoEventsForObject(objectId, eventType);
+    pageSize: number,
+    eventType: MonitorEventType | undefined,
+    cursor: EventJournalCursor | null,
+    direction: EventJournalDirection,
+): Promise<EventsPageResult> => {
+    const result = getAccountDataSource() === 'georitm'
+        ? await getGeoritmEventsPageForObject(objectId, pageSize, eventType, cursor, direction)
+        : await getDemoEventsPageForObject(objectId, pageSize, eventType, cursor, direction);
+
+    return {
+        events: result.page.events,
+        hasMore: result.page.hasMore,
+        depthLimited: result.page.depthLimited,
+        bottomCursor: result.page.bottomCursor,
+        upperCursor: result.page.upperCursor,
+        availableTypes: result.availableTypes,
+        totalEvents: result.totalEvents,
+    };
+};
 
 /** Выход: для GEORITM — отзыв серверной сессии (+ users/logout/); для demo — очистка cookie на стороне маршрута. */
 export const performLogout = async (): Promise<void> => {
